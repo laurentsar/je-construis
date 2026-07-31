@@ -420,6 +420,193 @@
       (nb === etapes.length ? ' — terminé, bravo !' : ' — coche au fur et à mesure du chantier.');
   }
 
+  // ------------------------------------------------------------ mode chantier
+  // Pas à pas plein écran, inspiré du mode cuisine de l'appli Recettes : sur un
+  // chantier les mains sont prises ou sales, la voix reste le seul contrôle
+  // vraiment utilisable pour avancer d'une étape sans salir l'écran.
+  var chantierEtapes = [];
+  var chantierIndex = 0;
+  var chantierSynth = window.speechSynthesis || null;
+  var chantierRecog = null;
+  var chantierMicActive = false;
+  var chantierTtsBusy = false;
+  var chantierRecogGen = 0; // chaque session vocale a un numéro ; les callbacks périmés sont ignorés
+
+  function texteChantierStep(e) {
+    var t = e.titre + '. ' + e.details.join('. ');
+    if (e.attention) t += '. Attention : ' + e.attention;
+    return t;
+  }
+
+  function ouvrirChantier() {
+    chantierEtapes = Steps.construire(R);
+    if (!chantierEtapes.length) return;
+    var cle = P.nom || 'projet';
+    var fait = coches[cle] || {};
+    // reprend au premier pas non coché : un chantier dure des semaines.
+    var premierRestant = chantierEtapes.findIndex(function (e) { return !fait[e.id]; });
+    chantierIndex = premierRestant >= 0 ? premierRestant : 0;
+
+    var box = $('chantier');
+    box.innerHTML =
+      '<div class="cook-head">' +
+        '<button class="cook-quit" id="chantierQuit" aria-label="Quitter">←</button>' +
+        '<span class="cook-title">' + esc(P.nom || 'Mon carport') + '</span>' +
+        '<button class="cook-mic" id="chantierMic" aria-label="Contrôle vocal">🎤</button>' +
+      '</div>' +
+      '<div class="cook-progress"><div id="chantierProgressBar" class="cook-progress-bar"></div></div>' +
+      '<div class="cook-counter" id="chantierCounter"></div>' +
+      '<div class="cook-body"><div class="cook-etape" id="chantierEtape"></div></div>' +
+      '<div class="cook-hint">🎤 Dire : « suivant » · « précédent » · « répéter » · « terminer »</div>' +
+      '<div class="cook-nav">' +
+        '<button id="chantierPrev" class="cook-prev">← Précédent</button>' +
+        '<button id="chantierNext" class="cook-next">Suivant →</button>' +
+      '</div>';
+    box.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    $('chantierQuit').addEventListener('click', fermerChantier);
+    $('chantierMic').addEventListener('click', basculerChantierMic);
+    $('chantierPrev').addEventListener('click', chantierPrecedent);
+    $('chantierNext').addEventListener('click', chantierSuivant);
+
+    rendreChantierStep();
+    parlerChantierStep();
+  }
+
+  function rendreChantierStep() {
+    var e = chantierEtapes[chantierIndex];
+    var total = chantierEtapes.length;
+    $('chantierCounter').textContent = 'Étape ' + (chantierIndex + 1) + ' / ' + total;
+    $('chantierProgressBar').style.width = Math.round(((chantierIndex + 1) / total) * 100) + '%';
+
+    var html = '<div class="cook-etape-titre">' + esc(e.titre) + '</div>' +
+      '<div class="cook-etape-duree">⏱ ' + esc(e.duree) + '</div>';
+    if (e.outils && e.outils.length) html += '<div class="cook-outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
+    html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
+    if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
+    if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
+    $('chantierEtape').innerHTML = html;
+
+    $('chantierPrev').disabled = chantierIndex === 0;
+    $('chantierNext').textContent = chantierIndex === total - 1 ? '✓ Terminer' : 'Suivant →';
+  }
+
+  function marquerChantierEtapeFaite() {
+    var e = chantierEtapes[chantierIndex];
+    var cle = P.nom || 'projet';
+    var fait = coches[cle] || {};
+    fait[e.id] = true;
+    coches[cle] = fait;
+    sauver(K_COCHES, coches);
+  }
+
+  function chantierSuivant() {
+    marquerChantierEtapeFaite();
+    if (chantierIndex < chantierEtapes.length - 1) {
+      chantierIndex++;
+      rendreChantierStep();
+      parlerChantierStep();
+    } else {
+      fermerChantier();
+      toast('Chantier terminé, bravo ! 🎉');
+    }
+  }
+
+  function chantierPrecedent() {
+    if (chantierIndex > 0) {
+      chantierIndex--;
+      rendreChantierStep();
+      parlerChantierStep();
+    }
+  }
+
+  function fermerChantier() {
+    arreterChantierMic();
+    arreterChantierParole();
+    $('chantier').hidden = true;
+    document.body.style.overflow = '';
+    rendreEtapes();
+  }
+
+  function parlerChantierStep() {
+    if (!chantierSynth) return;
+    arreterChantierParole();
+    var utt = new SpeechSynthesisUtterance(texteChantierStep(chantierEtapes[chantierIndex]));
+    utt.lang = 'fr-FR';
+    utt.rate = 0.95;
+    if (chantierMicActive) {
+      chantierTtsBusy = true;
+      chantierRecogGen++; // invalide les callbacks de l'ancienne session avant d'aborter
+      if (chantierRecog) { try { chantierRecog.abort(); } catch (e) {} chantierRecog = null; }
+      var fin = function () { chantierTtsBusy = false; if (chantierMicActive) setTimeout(demarrerChantierMic, 350); };
+      utt.onend = fin;
+      utt.onerror = fin;
+    }
+    chantierSynth.speak(utt);
+  }
+  function arreterChantierParole() { if (chantierSynth) chantierSynth.cancel(); }
+
+  function basculerChantierMic() { chantierMicActive ? arreterChantierMic() : demarrerChantierMic(); }
+
+  function demarrerChantierMic() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { toast('Reconnaissance vocale non disponible'); return; }
+    var gen = ++chantierRecogGen; // identifiant unique de cette session
+    if (chantierRecog) { try { chantierRecog.abort(); } catch (e) {} chantierRecog = null; }
+    var recog = new SR();
+    recog.lang = 'fr-FR';
+    recog.continuous = true;
+    recog.interimResults = false;
+    recog.onresult = function (e) {
+      if (gen !== chantierRecogGen) return; // session périmée, ignorer
+      var t = e.results[e.results.length - 1][0].transcript.trim().toLowerCase();
+      traiterCommandeVocale(t);
+    };
+    recog.onerror = function (ev) {
+      if (gen !== chantierRecogGen) return;
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        arreterChantierMic(); toast('Micro non autorisé');
+      } else if (chantierMicActive && !chantierTtsBusy) {
+        setTimeout(demarrerChantierMic, 600);
+      }
+    };
+    recog.onend = function () {
+      if (gen !== chantierRecogGen) return; // une nouvelle session a déjà pris le relais
+      if (chantierMicActive && !chantierTtsBusy) setTimeout(demarrerChantierMic, 100);
+    };
+    try { recog.start(); } catch (e) {
+      if (gen !== chantierRecogGen) return;
+      if (chantierMicActive && !chantierTtsBusy) setTimeout(demarrerChantierMic, 600);
+    }
+    chantierRecog = recog;
+    chantierMicActive = true;
+    var btn = $('chantierMic');
+    if (btn) btn.classList.add('active');
+  }
+
+  function arreterChantierMic() {
+    chantierMicActive = false;
+    chantierTtsBusy = false;
+    chantierRecogGen++; // invalide tous les callbacks en attente d'un coup
+    arreterChantierParole();
+    if (chantierRecog) { try { chantierRecog.abort(); } catch (e) {} chantierRecog = null; }
+    var btn = $('chantierMic');
+    if (btn) btn.classList.remove('active');
+  }
+
+  var chantierVoiceTs = 0;
+  function traiterCommandeVocale(txt) {
+    var maintenant = Date.now();
+    if (maintenant - chantierVoiceTs < 1200) return; // anti-rebond
+    chantierVoiceTs = maintenant;
+    if (/suivant|prochain|suite/.test(txt)) chantierSuivant();
+    else if (/pr[eé]c[eé]dent|retour|avant|reculer/.test(txt)) chantierPrecedent();
+    else if (/r[eé]p[eé]ter|relire|encore|lire/.test(txt)) parlerChantierStep();
+    else if (/terminer|quitter|stop|fermer|fin/.test(txt)) fermerChantier();
+    else if (/d[eé]but|recommencer|premi/.test(txt)) { chantierIndex = 0; rendreChantierStep(); parlerChantierStep(); }
+  }
+
   function rendrePied() {
     var pied = Calc.PIEDS_POTEAU[P.piedPoteau];
     $('piedDetail').innerHTML =
@@ -573,6 +760,8 @@
     });
 
     $('btnPrint').addEventListener('click', function () { window.print(); });
+
+    $('btnChantier').addEventListener('click', ouvrirChantier);
 
     $('verChip').textContent = 'v' + (window.APP_VERSION || '');
     $('verText').textContent = window.APP_VERSION || '';

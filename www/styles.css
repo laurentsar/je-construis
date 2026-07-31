@@ -179,6 +179,51 @@ button.ghost { background: var(--card2); color: var(--text); border: 1px solid v
 .progress { height: 8px; background: var(--card2); border-radius: 20px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--ok); width: 0; transition: width .25s; }
 
+/* ---------- mode chantier (pas à pas, mains prises) ---------- */
+.cook-btn {
+  display: block; width: 100%; margin: 12px 0 0; padding: 13px;
+  border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer;
+  background: linear-gradient(135deg, var(--wood), var(--wood-dim)); color: #1b1206;
+}
+.cook-btn:active { opacity: .85; transform: scale(.98); }
+
+.cook { position: fixed; inset: 0; z-index: 70; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+.cook[hidden] { display: none; }
+.cook-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  padding: calc(10px + env(safe-area-inset-top)) 14px 10px; border-bottom: 1px solid var(--line);
+}
+.cook-title { font-size: .88em; font-weight: 700; color: var(--muted); max-width: calc(100% - 110px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cook-quit, .cook-mic {
+  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--card2); color: var(--text); font-size: 18px; cursor: pointer;
+  flex: none; display: flex; align-items: center; justify-content: center;
+}
+.cook-mic.active { background: var(--bad); border-color: var(--bad); color: #fff; animation: chantierpulse 1.6s infinite; }
+@keyframes chantierpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(255,107,107,.5); } 50% { box-shadow: 0 0 0 8px rgba(255,107,107,0); } }
+
+.cook-progress { flex: 0 0 auto; height: 4px; background: var(--line); }
+.cook-progress-bar { height: 100%; background: linear-gradient(90deg, var(--wood), var(--wood-dim)); transition: width .4s ease; width: 0%; }
+.cook-counter { flex: 0 0 auto; font-size: .82em; font-weight: 700; color: var(--muted); text-align: center; padding: 8px 0; background: var(--card); }
+
+.cook-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 20px 20px calc(env(safe-area-inset-bottom) + 12px); }
+.cook-etape-titre { font-size: clamp(1.1em, 4vw, 1.4em); line-height: 1.4; font-weight: 800; text-align: center; max-width: 620px; margin: 0 auto 14px; color: var(--wood); }
+.cook-etape-duree { text-align: center; font-size: .78em; color: var(--muted); margin: -8px auto 16px; }
+.cook-outils { font-size: 12.5px; color: var(--muted); text-align: center; margin: 0 auto 16px; max-width: 620px; }
+.cook-etape ul { margin: 0 auto 6px; padding-left: 20px; max-width: 620px; }
+.cook-etape li { margin-bottom: 8px; font-size: 1.02em; line-height: 1.5; }
+
+.cook-hint { flex: 0 0 auto; text-align: center; color: var(--muted); font-size: .74em; padding: 6px 14px 10px; }
+.cook-nav {
+  flex: 0 0 auto; display: flex; gap: 12px; padding: 14px 16px calc(env(safe-area-inset-bottom) + 14px);
+  border-top: 1px solid var(--line);
+}
+.cook-prev, .cook-next { flex: 1; padding: 16px; border-radius: 14px; font-size: 1em; font-weight: 700; cursor: pointer; font-family: inherit; }
+.cook-prev { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+.cook-next { background: linear-gradient(135deg, var(--wood), var(--wood-dim)); color: #1b1206; border: none; }
+.cook-prev:disabled { opacity: .3; cursor: default; }
+.cook-prev:not(:disabled):active, .cook-next:active { transform: scale(.97); }
+
 /* ---------- pied de poteau ---------- */
 .pied-detail { margin: 10px 0; font-size: 13px; }
 .pied-detail .pc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
