@@ -206,8 +206,71 @@
   // --------------------------------------------------------------------------
   // CALCUL PRINCIPAL
   // --------------------------------------------------------------------------
+  // --------------------------------------------------------------------------
+  // ADAPTATION AU TERRAIN RÉEL.
+  //
+  // On ne construit pas dans le vide : ce qui compte, c'est la place
+  // disponible. Et la place prise par l'abri, ce n'est PAS le rectangle des
+  // poteaux — c'est le rectangle de la TOITURE, débords compris. C'est lui qui
+  // doit tenir dans le terrain, et c'est lui que l'urbanisme regarde pour la
+  // distance aux limites.
+  //
+  //   place utile = terrain − 2 × recul (de chaque côté)
+  //   entraxe des poteaux = place utile − débords correspondants
+  //
+  // Renvoie les dimensions à retenir, arrondies au 5 cm inférieur (on ne
+  // commande pas du bois au millimètre) et jamais négatives.
+  // --------------------------------------------------------------------------
+  function adapterAuTerrain(p) {
+    var recul = +p.recul || 0;
+    var dispoL = (+p.terrainLongueur || 0) - 2 * recul;
+    var dispoW = (+p.terrainLargeur || 0) - 2 * recul;
+    if (dispoL <= 0 || dispoW <= 0) return null;
+
+    var maxLongueur = dispoL - 2 * (+p.debordCote || 0);
+    var maxLargeur = dispoW - (+p.debordHaut || 0) - (+p.debordBas || 0);
+
+    function plancher5cm(x) { return Math.max(0, Math.floor(x * 20) / 20); }
+
+    return {
+      dispoL: arrondi(dispoL, 2),
+      dispoW: arrondi(dispoW, 2),
+      longueur: plancher5cm(maxLongueur),
+      largeur: plancher5cm(maxLargeur)
+    };
+  }
+
+  // Combien de voitures tiennent dessous ? Une place confortable fait 2,50 m de
+  // large sur 5,00 m de long — en dessous, on ouvre les portières contre un
+  // poteau. On teste les deux orientations et on garde la meilleure.
+  function capaciteVoitures(longueur, largeur) {
+    var L_PLACE = 5.0, W_PLACE = 2.5;
+    var a = (largeur >= L_PLACE) ? Math.floor(longueur / W_PLACE) : 0;
+    var b = (longueur >= L_PLACE) ? Math.floor(largeur / W_PLACE) : 0;
+    return {
+      nb: Math.max(a, b),
+      sens: a >= b ? 'voitures rangées côte à côte dans la longueur' : 'voitures rangées côte à côte dans la largeur'
+    };
+  }
+
   function calculer(p) {
     var out = { alertes: [], conseils: [] };
+
+    // Le terrain commande : si l'ajustement automatique est actif, ce sont ses
+    // dimensions qui déterminent celles de l'abri, pas l'inverse.
+    var terrain = adapterAuTerrain(p);
+    if (terrain && p.autoAjuster !== false) {
+      if (terrain.longueur < 2 || terrain.largeur < 2) {
+        out.alertes.push('Terrain trop petit : après ' + (+p.recul || 0) +
+          ' m de recul et les débords de toiture, il ne reste que ' +
+          terrain.longueur + ' × ' + terrain.largeur +
+          ' m entre poteaux. Réduis le recul ou les débords.');
+      }
+      p = Object.assign({}, p, {
+        longueur: Math.max(2, terrain.longueur),
+        largeur: Math.max(2, terrain.largeur)
+      });
+    }
 
     var longueur = +p.longueur, largeur = +p.largeur;
     var hHaut = +p.hautAvant, hBas = +p.hautArriere;
@@ -457,6 +520,47 @@
     out.conseils.push('Commande le bois 5 à 10 % plus long que le calcul quand c\'est possible : on recoupe toujours, on ne rallonge jamais.');
 
     // --- Résultat -----------------------------------------------------------
+    // --- Bilan terrain ------------------------------------------------------
+    var empriseToitL = longPanne;                       // toiture, débords compris
+    var empriseToitW = largeur + (+p.debordHaut || 0) + (+p.debordBas || 0);
+    var voitures = capaciteVoitures(longueur, largeur);
+    out.terrain = {
+      actif: !!terrain,
+      auto: terrain && p.autoAjuster !== false,
+      terrainLongueur: +p.terrainLongueur || 0,
+      terrainLargeur: +p.terrainLargeur || 0,
+      recul: +p.recul || 0,
+      dispoL: terrain ? terrain.dispoL : 0,
+      dispoW: terrain ? terrain.dispoW : 0,
+      empriseToitureL: arrondi(empriseToitL, 2),
+      empriseToitureW: arrondi(empriseToitW, 2),
+      empriseToitureM2: arrondi(empriseToitL * empriseToitW, 1),
+      voitures: voitures.nb,
+      voituresSens: voitures.sens
+    };
+
+    if (terrain) {
+      var resteL = (+p.terrainLongueur || 0) - empriseToitL;
+      var resteW = (+p.terrainLargeur || 0) - empriseToitW;
+      out.terrain.margeL = arrondi(resteL, 2);
+      out.terrain.margeW = arrondi(resteW, 2);
+      if (resteL < 0 || resteW < 0) {
+        out.alertes.push('La TOITURE dépasse du terrain : ' + arrondi(empriseToitL, 2) + ' × ' +
+          arrondi(empriseToitW, 2) + ' m de toit pour un terrain de ' + p.terrainLongueur + ' × ' +
+          p.terrainLargeur + ' m. Ce sont les débords qui débordent — réduis-les, ou réduis l\'abri.');
+      } else if ((+p.recul || 0) > 0 && (resteL / 2 < (+p.recul || 0) - 0.01 || resteW / 2 < (+p.recul || 0) - 0.01)) {
+        out.alertes.push('Le recul de ' + (+p.recul) +
+          ' m n\'est pas tenu partout une fois les débords comptés : il reste ' +
+          arrondi(Math.min(resteL, resteW) / 2, 2) + ' m du côté le plus juste. En France, c\'est bien' +
+          ' le bord de toiture qui compte pour la distance aux limites, pas le poteau.');
+      }
+      if (voitures.nb === 0) {
+        out.conseils.push('Aucune place de voiture complète ne tient dessous (il faut environ 2,50 m × 5,00 m par voiture). L\'abri reste utile pour du bois, un atelier ou des vélos.');
+      } else {
+        out.conseils.push(voitures.nb + ' voiture(s) peuvent tenir dessous — ' + voitures.sens + '.');
+      }
+    }
+
     out.parametres = p;
     out.structure = {
       nbPoteaux: nbPoteaux, nbParRangee: nbParRangee,
@@ -489,6 +593,8 @@
 
   global.Calc = {
     calculer: calculer,
+    adapterAuTerrain: adapterAuTerrain,
+    capaciteVoitures: capaciteVoitures,
     COUVERTURES: COUVERTURES,
     PIEDS_POTEAU: PIEDS_POTEAU,
     ESSENCES: ESSENCES,

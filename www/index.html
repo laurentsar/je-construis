@@ -36,6 +36,27 @@
       <div class="card" id="resume"></div>
 
       <div class="card">
+        <h2>Terrain disponible</h2>
+        <div class="grid2">
+          <label>Longueur du terrain (m)
+            <input type="number" id="f_terrainLongueur" step="0.1" min="0" max="40" value="7" />
+          </label>
+          <label>Largeur du terrain (m)
+            <input type="number" id="f_terrainLargeur" step="0.1" min="0" max="40" value="5" />
+          </label>
+          <label>Recul à respecter sur chaque bord (m)
+            <input type="number" id="f_recul" step="0.1" min="0" max="10" value="0" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="f_autoAjuster" checked />
+            <span>Adapter le carport au terrain</span>
+          </label>
+        </div>
+        <p class="hint">Mesure la place réellement disponible. L'app en déduit le plus grand abri possible : les <strong>débords de toiture sont comptés dedans</strong>, parce que c'est le bord du toit qui touche la limite en premier — et c'est lui que l'urbanisme regarde.</p>
+        <div id="terrainBilan"></div>
+      </div>
+
+      <div class="card">
         <h2>Dimensions</h2>
         <div class="grid2">
           <label>Nom du projet
@@ -63,7 +84,7 @@
             </select>
           </label>
         </div>
-        <p class="hint">La pente va du côté haut vers le côté bas, dans le sens de la largeur — comme sur un vrai monopente.</p>
+        <p class="hint" id="dimHint">La pente va du côté haut vers le côté bas, dans le sens de la largeur — comme sur un vrai monopente.</p>
       </div>
 
       <div class="card">

@@ -21,6 +21,9 @@
 
   var DEFAUT = {
     nom: 'Mon carport',
+    // Terrain : c'est lui qui commande les dimensions quand `autoAjuster` est
+    // vrai (le cas par défaut — on part toujours de la place qu'on a).
+    terrainLongueur: 7, terrainLargeur: 5, recul: 0, autoAjuster: true,
     longueur: 6, largeur: 4,
     hautAvant: 2.8, hautArriere: 2.5,
     poteauxParRangee: 0,
@@ -93,9 +96,11 @@
 
   function formVersEtat() {
     P.nom = $('f_nom').value || 'Mon carport';
-    ['longueur', 'largeur', 'hautAvant', 'hautArriere'].forEach(function (k) {
+    ['longueur', 'largeur', 'hautAvant', 'hautArriere',
+     'terrainLongueur', 'terrainLargeur', 'recul'].forEach(function (k) {
       P[k] = parseFloat($('f_' + k).value) || 0;
     });
+    P.autoAjuster = $('f_autoAjuster').checked;
     CHAMPS_CM.forEach(function (k) {
       P[k] = (parseFloat($('f_' + k).value) || 0) / 100;
     });
@@ -110,9 +115,11 @@
 
   function etatVersForm() {
     $('f_nom').value = P.nom || '';
-    ['longueur', 'largeur', 'hautAvant', 'hautArriere'].forEach(function (k) {
+    ['longueur', 'largeur', 'hautAvant', 'hautArriere',
+     'terrainLongueur', 'terrainLargeur', 'recul'].forEach(function (k) {
       $('f_' + k).value = P[k];
     });
+    $('f_autoAjuster').checked = P.autoAjuster !== false;
     CHAMPS_CM.forEach(function (k) {
       $('f_' + k).value = Math.round((P[k] || 0) * 100);
     });
@@ -126,10 +133,48 @@
   }
 
   // ------------------------------------------------------------------ rendu
+  // Quand le terrain commande, les deux champs de dimensions ne se saisissent
+  // plus : ils AFFICHENT ce que le terrain permet. Un champ qu'on peut taper
+  // mais qui est réécrit à la frappe suivante, c'est le meilleur moyen de faire
+  // croire à un bug.
+  function rendreTerrain() {
+    var t = R.terrain, auto = t.auto;
+    ['f_longueur', 'f_largeur'].forEach(function (id) {
+      $(id).disabled = !!auto;
+      $(id).style.opacity = auto ? 0.65 : 1;
+    });
+    if (auto) {
+      $('f_longueur').value = R.parametres.longueur;
+      $('f_largeur').value = R.parametres.largeur;
+    }
+    $('dimHint').innerHTML = auto
+      ? '<strong>Dimensions calculées depuis ton terrain.</strong> Décoche « Adapter le carport au terrain » pour les saisir toi-même.'
+      : 'La pente va du côté haut vers le côté bas, dans le sens de la largeur — comme sur un vrai monopente.';
+
+    if (!t.actif) {
+      $('terrainBilan').innerHTML = '<p class="hint">Renseigne les dimensions du terrain pour que l\'app cale l\'abri dedans.</p>';
+      return;
+    }
+    $('terrainBilan').innerHTML = '<div class="resume-grid" style="margin-top:10px">' +
+      '<div class="stat"><b>' + t.dispoL + ' × ' + t.dispoW + ' m</b><span>place utile après recul</span></div>' +
+      '<div class="stat"><b>' + t.empriseToitureL + ' × ' + t.empriseToitureW + ' m</b><span>toiture (débords compris)</span></div>' +
+      '<div class="stat"><b>' + t.empriseToitureM2 + ' m²</b><span>emprise réelle</span></div>' +
+      '<div class="stat"><b>' + t.voitures + '</b><span>voiture(s) dessous</span></div>' +
+      '</div>' +
+      (t.margeL !== undefined
+        ? '<p class="hint">Il reste ' + t.margeL + ' m dans la longueur et ' + t.margeW +
+          ' m dans la largeur, toiture comprise.</p>'
+        : '');
+  }
+
   function rendreResume() {
     var g = R.geometrie, s = R.structure;
+    // R.parametres, et non P : en mode terrain, ce sont les dimensions RETENUES
+    // par le calcul qu'il faut afficher, pas celles saisies avant ajustement.
+    var pr = R.parametres;
     var html = '<div class="resume-grid">' +
-      stat(Calc.arrondi(P.longueur * P.largeur, 1) + ' m²', 'emprise au sol') +
+      stat(pr.longueur + ' × ' + pr.largeur + ' m', 'abri (entre poteaux)') +
+      stat(Calc.arrondi(pr.longueur * pr.largeur, 1) + ' m²', 'emprise au sol') +
       stat(g.pentePct + ' %', 'pente (' + g.angle + '°)') +
       stat(s.nbPoteaux, 'poteaux') +
       stat(s.nbChevrons, 'chevrons') +
@@ -347,6 +392,7 @@
   // ------------------------------------------------------------- orchestration
   function recalculer(silencieux) {
     R = Calc.calculer(P);
+    rendreTerrain();
     rendreResume();
     rendreAlertes();
     rendreMateriaux();
@@ -373,9 +419,11 @@
   }
 
   function texteMateriaux() {
-    var l = ['JE CONSTRUIS — ' + (P.nom || 'Carport'),
-      P.longueur + ' m × ' + P.largeur + ' m · hauteurs ' + P.hautAvant + ' / ' + P.hautArriere + ' m',
-      'Pente ' + R.geometrie.pentePct + ' % · ' + Calc.arrondi(P.longueur * P.largeur, 1) + ' m² d\'emprise',
+    var pr = R.parametres;
+    var l = ['JE CONSTRUIS — ' + (pr.nom || 'Carport'),
+      pr.longueur + ' m × ' + pr.largeur + ' m · hauteurs ' + pr.hautAvant + ' / ' + pr.hautArriere + ' m',
+      'Pente ' + R.geometrie.pentePct + ' % · toiture ' + R.terrain.empriseToitureL + ' × ' +
+        R.terrain.empriseToitureW + ' m (' + R.terrain.empriseToitureM2 + ' m²)',
       ''];
     var cat = '';
     R.materiaux.forEach(function (m) {

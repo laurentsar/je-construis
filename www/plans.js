@@ -181,16 +181,36 @@
   // --------------------------------------------------------------------------
   function vueDessus(r) {
     var p = r.parametres, s = r.structure;
+    var t = r.terrain || {};
     var W = 460, H = 250, mx = 56, my = 46;
     var L = +p.longueur, l = +p.largeur;
-    var k = Math.min((W - 2 * mx) / L, (H - my - 56) / l);
+    // L'échelle tient compte du terrain quand il est renseigné : on veut voir
+    // l'abri DANS sa parcelle, pas l'abri seul.
+    var refL = Math.max(L, t.terrainLongueur || 0);
+    var refW = Math.max(l, t.terrainLargeur || 0);
+    var k = Math.min((W - 2 * mx) / refL, (H - my - 56) / refW);
 
-    var x0 = mx, y0 = my + 6;
+    var x0 = mx + ((refL - L) / 2) * k, y0 = my + 6 + ((refW - l) / 2) * k;
     var x1 = x0 + L * k, y1 = y0 + l * k;
     var epPanne = Math.max(5, (s.sectionPanne[0] / 1000) * k * 3);
     var epChev = Math.max(3, (s.sectionChevron[0] / 1000) * k * 3);
 
     var b = '';
+    // Terrain et emprise de toiture : ce sont eux qui disent si ça rentre.
+    if (t.actif) {
+      var tx = mx + ((refL - t.terrainLongueur) / 2) * k;
+      var ty = my + 6 + ((refW - t.terrainLargeur) / 2) * k;
+      b += '<rect x="' + n(tx) + '" y="' + n(ty) + '" width="' + n(t.terrainLongueur * k) +
+        '" height="' + n(t.terrainLargeur * k) +
+        '" fill="none" stroke="#4d6274" stroke-width="1.4" stroke-dasharray="6 4"/>';
+      b += texte(tx + t.terrainLongueur * k / 2, ty - 5,
+        'terrain ' + t.terrainLongueur + ' × ' + t.terrainLargeur + ' m', { fill: '#4d6274', size: 10 });
+      var ox = x0 - (+p.debordCote || 0) * k, oy = y0 - (+p.debordHaut || 0) * k;
+      b += '<rect x="' + n(ox) + '" y="' + n(oy) +
+        '" width="' + n(t.empriseToitureL * k) + '" height="' + n(t.empriseToitureW * k) +
+        '" fill="rgba(159,180,204,0.10)" stroke="#9fb4cc" stroke-width="1" stroke-dasharray="3 3"/>';
+    }
+
     // Chevrons (perpendiculaires aux pannes).
     var pasChev = (x1 - x0) / (s.nbChevrons - 1);
     for (var i = 0; i < s.nbChevrons; i++) {
