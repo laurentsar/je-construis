@@ -36,6 +36,11 @@
     chargeSup: 0,
     plotCote: 0.5, plotProfondeur: 0.5,
     jambesDeForce: true,
+    // Options : elles ne coûtent rien tant qu'elles sont décochées.
+    solaire: false, panneau: 'p430', ensoleillement: 'centre', azimut: 'sud',
+    onduleur: 'micro', maxPanneaux: 0, tauxAutoconso: 60, prixKwh: 0.25, prixRevente: 0.076,
+    elec: false, distanceTableau: 20, nbPrises: 2, nbLampes: 2,
+    borneVE: 'aucune', passageVehicule: true,
     prix: {}
   };
 
@@ -92,6 +97,11 @@
     Object.keys(Calc.ESSENCES).forEach(function (k) {
       se.appendChild(new Option(Calc.ESSENCES[k].nom, k));
     });
+    [['f_panneau', Calc.PANNEAUX], ['f_ensoleillement', Calc.ENSOLEILLEMENT],
+     ['f_azimut', Calc.AZIMUTS], ['f_borneVE', Calc.BORNES_VE]].forEach(function (paire) {
+      var sel = $(paire[0]), dict = paire[1];
+      Object.keys(dict).forEach(function (k) { sel.appendChild(new Option(dict[k].nom, k)); });
+    });
   }
 
   function formVersEtat() {
@@ -111,6 +121,19 @@
     P.essence = $('f_essence').value;
     P.chargeSup = parseInt($('f_chargeSup').value, 10) || 0;
     P.jambesDeForce = $('f_jambesDeForce').checked;
+
+    P.solaire = $('f_solaire').checked;
+    P.panneau = $('f_panneau').value;
+    P.ensoleillement = $('f_ensoleillement').value;
+    P.azimut = $('f_azimut').value;
+    P.onduleur = $('f_onduleur').value;
+    ['maxPanneaux', 'tauxAutoconso', 'prixKwh', 'prixRevente',
+     'distanceTableau', 'nbPrises', 'nbLampes'].forEach(function (k) {
+      P[k] = parseFloat($('f_' + k).value) || 0;
+    });
+    P.elec = $('f_elec').checked;
+    P.borneVE = $('f_borneVE').value;
+    P.passageVehicule = $('f_passageVehicule').checked;
   }
 
   function etatVersForm() {
@@ -130,6 +153,19 @@
     $('f_essence').value = P.essence;
     $('f_chargeSup').value = P.chargeSup || 0;
     $('f_jambesDeForce').checked = P.jambesDeForce !== false;
+
+    $('f_solaire').checked = P.solaire === true;
+    $('f_panneau').value = P.panneau || 'p430';
+    $('f_ensoleillement').value = P.ensoleillement || 'centre';
+    $('f_azimut').value = P.azimut || 'sud';
+    $('f_onduleur').value = P.onduleur || 'micro';
+    ['maxPanneaux', 'tauxAutoconso', 'prixKwh', 'prixRevente',
+     'distanceTableau', 'nbPrises', 'nbLampes'].forEach(function (k) {
+      $('f_' + k).value = P[k];
+    });
+    $('f_elec').checked = P.elec === true;
+    $('f_borneVE').value = P.borneVE || 'aucune';
+    $('f_passageVehicule').checked = P.passageVehicule !== false;
   }
 
   // ------------------------------------------------------------------ rendu
@@ -167,6 +203,45 @@
         : '');
   }
 
+  // Les réglages d'une option décochée n'ont rien à faire à l'écran : ils
+  // donnent l'impression que l'option est active.
+  function rendreOptions() {
+    $('solaireForm').style.display = P.solaire ? '' : 'none';
+    $('elecForm').style.display = P.elec ? '' : 'none';
+
+    var sol = R.solaire;
+    $('solaireBilan').innerHTML = (!sol || !sol.nb)
+      ? (P.solaire ? '<p class="hint">Aucun panneau ne tient sur cette toiture.</p>' : '')
+      : '<div class="resume-grid" style="margin-top:10px">' +
+        '<div class="stat"><b>' + sol.nb + '</b><span>panneaux (' + sol.parRangee + ' × ' + sol.rangees +
+          ', ' + sol.sens + ')</span></div>' +
+        '<div class="stat"><b>' + sol.kwc + ' kWc</b><span>' + sol.surface + ' m² de panneaux</span></div>' +
+        '<div class="stat"><b>' + sol.production.toLocaleString('fr-FR') + ' kWh</b><span>par an (facteur ' +
+          sol.facteur + ')</span></div>' +
+        '<div class="stat"><b>' + euros(sol.economie) + '</b><span>par an, estimé</span></div>' +
+        '<div class="stat"><b>' + sol.poids + ' kg</b><span>ajoutés sur la charpente</span></div>' +
+        '</div>' +
+        '<p class="hint">Production indicative : ' + sol.ensoleillement.kwhParKwc + ' kWh/kWc en ' +
+        esc(sol.ensoleillement.nom) + ', corrigés de l\'inclinaison (' + R.geometrie.angle +
+        '°) et de l\'orientation (' + esc(sol.azimut.nom) + ').</p>';
+
+    var e = R.elec;
+    if (!e) { $('elecBilan').innerHTML = ''; return; }
+    function circuit(nom, c) {
+      if (!c) return '';
+      return '<div class="stat"><b>' + c.section + ' mm²</b><span>' + nom + ' — chute ' +
+        c.chutePct + ' %</span></div>';
+    }
+    $('elecBilan').innerHTML = '<div class="resume-grid" style="margin-top:10px">' +
+      circuit('prises', e.circuitPrises) + circuit('éclairage', e.circuitLumiere) +
+      circuit('borne ' + (e.borne.kw || '') + (e.borne.kw ? ' kW' : ''), e.circuitBorne) +
+      '<div class="stat"><b>' + e.longueurTranchee + ' m</b><span>de tranchée à ' +
+        Math.round(e.profondeurTranchee * 100) + ' cm</span></div>' +
+      '</div>' +
+      '<p class="hint">Sections calculées sur le courant admissible ET la chute de tension ' +
+      '(5 % maxi, 3 % pour l\'éclairage). Le raccordement au tableau reste l\'affaire d\'un électricien.</p>';
+  }
+
   function rendreResume() {
     var g = R.geometrie, s = R.structure;
     // R.parametres, et non P : en mode terrain, ce sont les dimensions RETENUES
@@ -180,6 +255,12 @@
       stat(s.nbChevrons, 'chevrons') +
       stat(R.charges.volumeBois + ' m³', 'de bois (' + Math.round(R.charges.masseBois) + ' kg)') +
       stat(euros(R.devis.total), 'budget estimé') +
+      (R.solaire && R.solaire.nb
+        ? stat(R.solaire.kwc + ' kWc', R.solaire.production.toLocaleString('fr-FR') + ' kWh/an')
+        : '') +
+      (R.elec && R.elec.borne.kw
+        ? stat(R.elec.borne.kw + ' kW', 'borne de recharge')
+        : '') +
       '</div>';
     $('resume').innerHTML = html;
 
@@ -393,6 +474,7 @@
   function recalculer(silencieux) {
     R = Calc.calculer(P);
     rendreTerrain();
+    rendreOptions();
     rendreResume();
     rendreAlertes();
     rendreMateriaux();

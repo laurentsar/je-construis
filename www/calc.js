@@ -138,7 +138,10 @@
     pied_poteau: 28,          // € / pièce
     beton_sac: 6.5,           // € / sac de 35 kg
     visserie_forfait: 90,     // € pour l'ensemble
-    equerre: 3.5              // € / pièce
+    equerre: 3.5,             // € / pièce
+    solaire_wc: 0.85,         // € / Wc posé soi-même (matériel seul)
+    cable_ml: 4.5,            // € / ml de câble R2V
+    borne_ve: 750             // € / borne de recharge
   };
 
   // --------------------------------------------------------------------------
@@ -201,6 +204,207 @@
       }
     });
     return barres;
+  }
+
+
+  // --------------------------------------------------------------------------
+  // OPTION SOLAIRE.
+  //
+  // Un carport est un très bon support photovoltaïque : la surface est propre,
+  // dégagée, et la structure existe déjà. Deux réserves honnêtes, que l'app
+  // rappelle plutôt que de les taire :
+  //   - une pente de carport est FAIBLE (5 à 10 %), donc le rendement est un
+  //     peu en dessous d'une toiture inclinée, et surtout la pluie ne lave plus
+  //     les panneaux : il faut les nettoyer ;
+  //   - les panneaux et leurs rails ajoutent une charge permanente, qui se
+  //     cumule à la neige. Le calcul monte donc d'un cran les sections de bois.
+  // --------------------------------------------------------------------------
+  var PANNEAUX = {
+    p430: { nom: 'Panneau 430 Wc (1,72 × 1,13 m)', L: 1.722, l: 1.134, wc: 430, poids: 21 },
+    p500: { nom: 'Panneau 500 Wc (1,95 × 1,13 m)', L: 1.95, l: 1.134, wc: 500, poids: 24 },
+    p590: { nom: 'Panneau 590 Wc (2,28 × 1,13 m)', L: 2.278, l: 1.134, wc: 590, poids: 28 }
+  };
+
+  // Productible indicatif, en kWh par kWc et par an, pour une pose optimale.
+  var ENSOLEILLEMENT = {
+    nord: { nom: 'Nord / Nord-Est', kwhParKwc: 950 },
+    centre: { nom: 'Centre / Ouest', kwhParKwc: 1100 },
+    sudouest: { nom: 'Sud-Ouest', kwhParKwc: 1250 },
+    mediterranee: { nom: 'Méditerranée', kwhParKwc: 1400 }
+  };
+
+  var AZIMUTS = {
+    sud: { nom: 'Sud', facteur: 1 },
+    sudest: { nom: 'Sud-Est', facteur: 0.96 },
+    sudouest: { nom: 'Sud-Ouest', facteur: 0.96 },
+    est: { nom: 'Est', facteur: 0.85 },
+    ouest: { nom: 'Ouest', facteur: 0.85 },
+    nord: { nom: 'Nord', facteur: 0.62 }
+  };
+
+  // Rendement selon l'inclinaison réelle du toit (référence : 30°).
+  function facteurInclinaison(angle) {
+    var table = [[0, 0.87], [10, 0.93], [20, 0.98], [30, 1.0], [45, 0.96], [60, 0.86]];
+    if (angle <= table[0][0]) return table[0][1];
+    for (var i = 1; i < table.length; i++) {
+      if (angle <= table[i][0]) {
+        var a = table[i - 1], b = table[i];
+        return a[1] + (b[1] - a[1]) * (angle - a[0]) / (b[0] - a[0]);
+      }
+    }
+    return 0.8;
+  }
+
+  function calculerSolaire(p, geo, longPanne, longChevron, out) {
+    if (!p.solaire) return null;
+    var pan = PANNEAUX[p.panneau] || PANNEAUX.p430;
+    var ens = ENSOLEILLEMENT[p.ensoleillement] || ENSOLEILLEMENT.centre;
+    var az = AZIMUTS[p.azimut] || AZIMUTS.sud;
+
+    // Champ posable : la toiture, moins 30 cm de marge sur tout le pourtour
+    // (rives, circulation pour la pose et l'entretien).
+    var marge = 0.3;
+    var champL = Math.max(0, longPanne - 2 * marge);        // sens de la longueur
+    var champW = Math.max(0, longChevron - 2 * marge);      // sens du rampant
+
+    // Deux orientations de pose possibles : on garde celle qui loge le plus de
+    // panneaux, avec 2 cm de jeu entre panneaux.
+    function combien(largeurPanneau, hauteurPanneau) {
+      var jeu = 0.02;
+      var nx = Math.floor((champL + jeu) / (largeurPanneau + jeu));
+      var ny = Math.floor((champW + jeu) / (hauteurPanneau + jeu));
+      return { nx: Math.max(0, nx), ny: Math.max(0, ny), total: Math.max(0, nx) * Math.max(0, ny) };
+    }
+    var portrait = combien(pan.l, pan.L);
+    var paysage = combien(pan.L, pan.l);
+    var pose = portrait.total >= paysage.total ? portrait : paysage;
+    var sens = portrait.total >= paysage.total ? 'portrait' : 'paysage';
+
+    var nb = pose.total;
+    if (p.maxPanneaux && +p.maxPanneaux > 0) nb = Math.min(nb, Math.floor(+p.maxPanneaux));
+
+    var kwc = nb * pan.wc / 1000;
+    var facteur = facteurInclinaison(geo.angle) * az.facteur;
+    var production = Math.round(kwc * ens.kwhParKwc * facteur);
+    var surface = nb * pan.L * pan.l;
+    var poids = nb * pan.poids + surface * 3;    // + rails d'aluminium
+
+    // Onduleur : micro-onduleurs (un par panneau) ou onduleur central.
+    var micro = p.onduleur !== 'central';
+
+    var autoconso = Math.min(1, Math.max(0, (+p.tauxAutoconso || 60) / 100));
+    var prixKwh = +p.prixKwh || 0.25;
+    var prixRevente = +p.prixRevente || 0.076;
+    var economie = Math.round(production * autoconso * prixKwh +
+      production * (1 - autoconso) * prixRevente);
+
+    if (nb === 0) {
+      out.alertes.push('Aucun panneau ne tient sur cette toiture : il faut au moins ' +
+        arrondi(pan.l + 0.6, 2) + ' m dans un sens et ' + arrondi(pan.L + 0.6, 2) + ' m dans l\'autre.');
+    }
+    if (geo.angle < 10 && nb > 0) {
+      out.alertes.push('Inclinaison de ' + geo.angle + '° : la pluie ne lave plus les panneaux et les ' +
+        'salissures s\'accumulent en bas de champ. Prévois un nettoyage annuel, ou relève les panneaux ' +
+        'sur des triangles support (10 à 15° suffisent à retrouver l\'auto-nettoyage).');
+    }
+    if (nb > 0) {
+      out.conseils.push('Solaire : déclaration préalable de travaux, convention d\'autoconsommation ' +
+        'auprès d\'Enedis et attestation CONSUEL sont nécessaires avant la mise en service. ' +
+        'Compte 2 à 3 mois de démarches.');
+      out.conseils.push('Charge ajoutée par le solaire : environ ' + Math.round(poids) +
+        ' kg au total, soit ' + arrondi(poids / (longPanne * longChevron), 1) +
+        ' kg/m². Les sections de bois ont été montées d\'un cran en conséquence.');
+    }
+
+    return {
+      panneau: pan, nb: nb, sens: sens, rangees: pose.ny, parRangee: pose.nx,
+      kwc: arrondi(kwc, 2), surface: arrondi(surface, 1), poids: Math.round(poids),
+      production: production, ensoleillement: ens, azimut: az,
+      facteur: arrondi(facteur, 2), economie: economie,
+      micro: micro,
+      rails: Math.ceil(surface / 2 * 1.2),        // ml de rail alu
+      pinces: nb * 4,
+      cableSolaire: Math.ceil(nb * 3 + longPanne * 2)
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // OPTION ÉLECTRICITÉ : prises, éclairage et borne de recharge.
+  //
+  // Le calcul qui compte ici, c'est la SECTION DU CÂBLE d'alimentation : un
+  // carport est loin du tableau, et c'est la longueur qui décide, pas
+  // l'intensité seule. On retient la première section normalisée qui tient à la
+  // fois le courant et la chute de tension (5 % maxi, 3 % si c'est de
+  // l'éclairage seul, comme le demande la NF C 15-100).
+  // --------------------------------------------------------------------------
+  var SECTIONS_CABLE = [
+    { s: 1.5, iz: 16 }, { s: 2.5, iz: 21 }, { s: 4, iz: 27 }, { s: 6, iz: 35 },
+    { s: 10, iz: 48 }, { s: 16, iz: 64 }, { s: 25, iz: 84 }, { s: 35, iz: 104 }
+  ];
+  var RHO_CUIVRE = 0.023;      // Ω·mm²/m
+
+  function sectionCable(courant, longueur, triphase, chuteMaxPct) {
+    var u = triphase ? 400 : 230;
+    var chuteMax = (chuteMaxPct || 5) / 100 * u;
+    for (var i = 0; i < SECTIONS_CABLE.length; i++) {
+      var c = SECTIONS_CABLE[i];
+      if (c.iz < courant) continue;
+      var chute = triphase
+        ? Math.sqrt(3) * RHO_CUIVRE * longueur * courant / c.s
+        : 2 * RHO_CUIVRE * longueur * courant / c.s;
+      if (chute <= chuteMax) {
+        return { section: c.s, chute: arrondi(chute, 1), chutePct: arrondi(chute / u * 100, 2), iz: c.iz };
+      }
+    }
+    return null;
+  }
+
+  var BORNES_VE = {
+    aucune: { nom: 'Aucune', kw: 0, courant: 0, triphase: false },
+    b3_7: { nom: 'Borne 3,7 kW (16 A mono)', kw: 3.7, courant: 16, triphase: false },
+    b7_4: { nom: 'Borne 7,4 kW (32 A mono)', kw: 7.4, courant: 32, triphase: false },
+    b11: { nom: 'Borne 11 kW (16 A triphasé)', kw: 11, courant: 16, triphase: true },
+    b22: { nom: 'Borne 22 kW (32 A triphasé)', kw: 22, courant: 32, triphase: true }
+  };
+
+  function calculerElec(p, out) {
+    if (!p.elec) return null;
+    var longueur = +p.distanceTableau || 20;
+    var nbPrises = +p.nbPrises || 0;
+    var nbLampes = +p.nbLampes || 0;
+    var borne = BORNES_VE[p.borneVE] || BORNES_VE.aucune;
+
+    // Circuit prises + éclairage : 16 A suffit très largement pour un abri.
+    var circuitPrises = nbPrises > 0 ? sectionCable(16, longueur, false, 5) : null;
+    var circuitLumiere = nbLampes > 0 ? sectionCable(10, longueur, false, 3) : null;
+    var circuitBorne = borne.kw > 0 ? sectionCable(borne.courant * 1.25, longueur, borne.triphase, 5) : null;
+
+    if (borne.kw > 0 && !circuitBorne) {
+      out.alertes.push('Borne ' + borne.nom + ' à ' + longueur +
+        ' m du tableau : aucune section courante ne tient la chute de tension. ' +
+        'Rapproche le point d\'alimentation, ou fais étudier la ligne par un électricien.');
+    }
+    if (borne.kw >= 7.4) {
+      out.conseils.push('Une borne de ' + borne.kw + ' kW impose de vérifier la puissance souscrite ' +
+        'de ton abonnement (et souvent de passer en 12 kVA ou en triphasé).');
+    }
+
+    // Tranchée : 85 cm sous un passage de véhicule, 60 cm ailleurs.
+    var profondeur = p.passageVehicule ? 0.85 : 0.6;
+
+    out.conseils.push('Électricité : ces sections sont calculées (courant admissible + chute de ' +
+      'tension), mais le raccordement au tableau et la mise à la terre doivent être faits ou ' +
+      'vérifiés par un électricien — c\'est aussi ce que demandera l\'assurance en cas de sinistre.');
+
+    return {
+      distance: longueur, nbPrises: nbPrises, nbLampes: nbLampes, borne: borne,
+      circuitPrises: circuitPrises, circuitLumiere: circuitLumiere, circuitBorne: circuitBorne,
+      profondeurTranchee: profondeur,
+      longueurTranchee: Math.ceil(longueur),
+      gaine: Math.ceil(longueur * 1.1),
+      grillage: Math.ceil(longueur),
+      cableTotal: Math.ceil(longueur * 1.15)
+    };
   }
 
   // --------------------------------------------------------------------------
@@ -278,6 +482,10 @@
     var pied = PIEDS_POTEAU[p.piedPoteau] || PIEDS_POTEAU.reglable;
     var essence = ESSENCES[p.essence] || ESSENCES.douglas;
     var crans = +p.chargeSup || 0;   // 0 = plaine, 1 = neige marquée, 2 = montagne
+    // Les panneaux et leurs rails pèsent en permanence sur la charpente, et
+    // cette charge s'ajoute à la neige : on monte d'un cran, comme pour une
+    // couverture lourde.
+    if (p.solaire) crans += 1;
 
     // --- Géométrie de la pente ---------------------------------------------
     var deltaH = hHaut - hBas;
@@ -487,6 +695,66 @@
     ajouterDebit('Chevrons', sectionChevron, longChevron, nbChevrons);
     if (nbJambes) ajouterDebit('Jambes de force', sectionJambe, longJambe, nbJambes);
 
+    // --- Options : solaire et électricité -----------------------------------
+    var solaire = calculerSolaire(p, out.geometrie, longPanne, longChevron, out);
+    var elec = calculerElec(p, out);
+
+    if (solaire && solaire.nb > 0) {
+      ligne('Solaire', solaire.panneau.nom, null, 0, solaire.nb, 'u',
+        solaire.parRangee + ' par rangée × ' + solaire.rangees + ' rangée(s), en ' + solaire.sens +
+        ' — ' + solaire.kwc + ' kWc');
+      ligne('Solaire', 'Rail aluminium de fixation', null, 0, solaire.rails, 'ml',
+        'Posé perpendiculairement aux panneaux, vissé dans les chevrons');
+      ligne('Solaire', 'Pinces de fixation (milieu + extrémité)', null, 0, solaire.pinces, 'u', '');
+      ligne('Solaire', 'Crochets ou pattes de fixation sur bac acier', null, 0, solaire.rails * 2, 'u',
+        'Un point de fixation tous les 50 cm environ');
+      ligne('Solaire', solaire.micro ? 'Micro-onduleurs' : 'Onduleur central',
+        null, 0, solaire.micro ? solaire.nb : 1, 'u',
+        solaire.micro
+          ? 'Un par panneau : une ombre sur un panneau ne pénalise plus les autres'
+          : 'Moins cher, mais tout le champ suit le panneau le plus ombragé');
+      ligne('Solaire', 'Câble solaire 6 mm² + connecteurs MC4', null, 0, solaire.cableSolaire, 'ml', '');
+      ligne('Solaire', 'Coffret de protection AC/DC + parafoudre', null, 0, 1, 'u',
+        'Obligatoire pour le CONSUEL');
+    }
+
+    if (elec) {
+      if (elec.circuitPrises) {
+        ligne('Électricité', 'Câble U-1000 R2V 3G' + elec.circuitPrises.section + ' (prises)',
+          null, 0, elec.cableTotal, 'ml',
+          'Chute de tension ' + elec.circuitPrises.chutePct + ' % sur ' + elec.distance + ' m');
+        ligne('Électricité', 'Prises étanches IP55', null, 0, elec.nbPrises, 'u',
+          'Sous l\'abri, à 1 m du sol minimum');
+      }
+      if (elec.circuitLumiere) {
+        ligne('Électricité', 'Câble U-1000 R2V 3G' + elec.circuitLumiere.section + ' (éclairage)',
+          null, 0, elec.cableTotal, 'ml',
+          'Chute limitée à 3 % : au-delà, les LED faiblissent en bout de ligne');
+        ligne('Électricité', 'Réglettes LED étanches IP65', null, 0, elec.nbLampes, 'u',
+          'Fixées sous les chevrons, entre deux pannes');
+        ligne('Électricité', 'Détecteur de mouvement extérieur', null, 0, 1, 'u',
+          'Évite de laisser la lumière allumée toute la nuit');
+      }
+      if (elec.circuitBorne) {
+        ligne('Électricité', 'Câble U-1000 R2V ' + (elec.borne.triphase ? '5G' : '3G') +
+          elec.circuitBorne.section + ' (borne)', null, 0, elec.cableTotal, 'ml',
+          'Chute de tension ' + elec.circuitBorne.chutePct + ' % — calculée pour ' +
+          elec.borne.courant + ' A sur ' + elec.distance + ' m');
+        ligne('Électricité', elec.borne.nom, null, 0, 1, 'u',
+          'Sur pied ou fixée au poteau, à 90 – 120 cm du sol');
+        ligne('Électricité', 'Différentiel 30 mA type A-EV (ou type B)', null, 0, 1, 'u',
+          'Exigé pour une borne de recharge : un différentiel classique ne détecte pas le courant continu de défaut');
+      }
+      ligne('Électricité', 'Gaine TPC rouge Ø63 mm', null, 0, elec.gaine, 'ml',
+        'Enterrée à ' + Math.round(elec.profondeurTranchee * 100) + ' cm' +
+        (elec.profondeurTranchee > 0.7 ? ' (passage de véhicule)' : ''));
+      ligne('Électricité', 'Grillage avertisseur rouge', null, 0, elec.grillage, 'ml',
+        'À 20 cm au-dessus de la gaine : c\'est lui qui évite le coup de pelle dans dix ans');
+      ligne('Électricité', 'Coffret étanche IP65 + disjoncteurs', null, 0, 1, 'u', '');
+      ligne('Électricité', 'Piquet de terre + liaison équipotentielle', null, 0, 1, 'u',
+        'Indispensable sur un ouvrage extérieur avec des masses métalliques');
+    }
+
     // --- Devis --------------------------------------------------------------
     var prix = Object.assign({}, PRIX_DEFAUT, p.prix || {});
     var coutBois = volumeBois * prix.bois_m3 * essence.prixMultiplicateur;
@@ -503,6 +771,18 @@
       { poste: 'Équerres et sabots', montant: coutEquerres },
       { poste: 'Visserie et petit matériel', montant: coutVisserie }
     ];
+    if (solaire && solaire.nb > 0) {
+      var prixWc = +prix.solaire_wc || PRIX_DEFAUT.solaire_wc;
+      devis.push({ poste: 'Kit solaire ' + solaire.kwc + ' kWc (panneaux, rails, onduleurs, coffret)',
+        montant: solaire.kwc * 1000 * prixWc });
+    }
+    if (elec) {
+      var coutElec = (elec.cableTotal * (+prix.cable_ml || PRIX_DEFAUT.cable_ml)) +
+        (elec.gaine * 3) + (elec.nbPrises * 22) + (elec.nbLampes * 35) +
+        (elec.borne.kw > 0 ? (+prix.borne_ve || PRIX_DEFAUT.borne_ve) : 0) + 180;
+      devis.push({ poste: 'Électricité (câbles, tranchée, prises, éclairage' +
+        (elec.borne.kw > 0 ? ', borne ' + elec.borne.kw + ' kW' : '') + ')', montant: coutElec });
+    }
     var total = devis.reduce(function (s, d) { return s + d.montant; }, 0);
 
     // --- Conseils contextuels ----------------------------------------------
@@ -582,6 +862,8 @@
       volumeBeton: arrondi(volumeBeton, 2), sacs: sacsBeton,
       plotCote: plotCote, plotProfondeur: plotProf
     };
+    out.solaire = solaire;
+    out.elec = elec;
     out.materiaux = materiaux;
     out.debit = debit;
     out.devis = { lignes: devis, total: Math.round(total) };
@@ -601,6 +883,11 @@
     PRIX_DEFAUT: PRIX_DEFAUT,
     LONGUEURS_STOCK: LONGUEURS_STOCK,
     debiter: debiter,
+    sectionCable: sectionCable,
+    PANNEAUX: PANNEAUX,
+    ENSOLEILLEMENT: ENSOLEILLEMENT,
+    AZIMUTS: AZIMUTS,
+    BORNES_VE: BORNES_VE,
     arrondi: arrondi,
     sectionTexte: sectionTexte
   };

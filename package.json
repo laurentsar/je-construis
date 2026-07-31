@@ -1,6 +1,6 @@
 {
   "name": "je-construis",
-  "version": "1.0",
+  "version": "1.1",
   "private": true,
   "description": "Plans de carport bois : tu donnes tes dimensions, l'app calcule les sections, la liste des matériaux, le débit de coupe, les plans cotés et la marche à suivre (PWA + APK, 100 % hors ligne)",
   "scripts": { "sync": "cap sync android", "open": "cap open android" },

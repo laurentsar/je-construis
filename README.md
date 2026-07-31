@@ -16,7 +16,9 @@ terrain sans 4G.
 | 📋 **Matériaux** | La liste complète — bois, quincaillerie, couverture, béton — avec quantités, sections et longueurs, plus une estimation de budget à prix éditables. |
 | ✂️ **Débit** | Comment sortir toutes les pièces des barres du commerce (3, 4, 5, 6 m), trait de scie compris, avec le dessin de chaque barre et la chute. |
 | 📏 **Plans** | Perspective, vue de face, vue de côté et vue de dessus, **cotées et redessinées à chaque changement de dimension**. |
-| 🔨 **Étapes** | 12 étapes du chantier (démarches, implantation, fouilles, plots, poteaux, pannes, contreventement, chevrons, couverture, finitions, entretien), avec outils, durées, pièges et cases à cocher. |
+| 🔨 **Étapes** | 12 à 15 étapes du chantier (les options solaire et électricité en ajoutent trois) : démarches, implantation, fouilles, plots, poteaux, pannes, contreventement, chevrons, couverture, finitions, entretien — avec outils, durées, pièges et cases à cocher. |
+| ☀️ **Solaire** *(carte de l'onglet Projet)* | Combien de panneaux tiennent sur la toiture, en quelle disposition, pour quelle puissance crête, quelle production annuelle et quelle économie — inclinaison et orientation réelles comprises. |
+| 🔌 **Électricité** *(carte de l'onglet Projet)* | Prises étanches, éclairage LED et **borne de recharge** : l'app calcule la **section de câble** qui tient à la fois le courant et la chute de tension sur la distance jusqu'au tableau, la profondeur de tranchée et les protections. |
 | ℹ️ **Infos** | Mes projets enregistrés, sauvegarde vers Home Assistant, limites du calcul. |
 
 ## Ce que l'app calcule vraiment
@@ -34,6 +36,14 @@ terrain sans 4G.
 - **Volume et masse de bois** (utile pour la livraison).
 - **Emprise au sol**, avec le rappel déclaration préalable / permis de construire
   au seuil de 20 m².
+- **Photovoltaïque** : nombre de panneaux réellement posables (les deux
+  orientations sont testées, marges de rive comprises), puissance crête,
+  production corrigée de l'inclinaison du toit et de l'orientation, économie
+  annuelle, et **charge ajoutée** — qui fait automatiquement monter d'un cran
+  les sections de bois.
+- **Sections de câble** par le calcul : courant admissible **et** chute de
+  tension (5 % maxi, 3 % pour l'éclairage, comme la NF C 15-100), pour des
+  prises, des LED ou une borne de 3,7 à 22 kW.
 
 ## Ce que l'app n'est pas
 

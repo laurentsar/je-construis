@@ -196,6 +196,79 @@
     }
     etapes.push(etapeCouv);
 
+    // --- Options : elles s'insèrent AVANT les finitions, parce qu'on ne pose
+    // pas des panneaux ni un câble une fois la gouttière et les rives en place.
+    if (r.solaire && r.solaire.nb > 0) {
+      var sol = r.solaire;
+      etapes.push({
+        id: 'solaire',
+        titre: 'Poser les panneaux solaires (' + sol.kwc + ' kWc)',
+        duree: 'une journée à deux',
+        outils: ['Visseuse à choc', 'Clé dynamométrique', 'Cordeau', 'Harnais', 'Multimètre'],
+        details: [
+          sol.nb + ' panneaux « ' + sol.panneau.nom + ' », en ' + sol.sens + ' : ' +
+            sol.parRangee + ' par rangée sur ' + sol.rangees + ' rangée(s).',
+          'Rails aluminium vissés DANS LES CHEVRONS (pas dans la seule tôle) : ' + sol.rails +
+            ' ml environ, avec un point de fixation tous les 50 cm.',
+          'Pose les crochets, puis les rails, puis contrôle l\'alignement au cordeau avant de poser le premier panneau.',
+          sol.micro
+            ? 'Un micro-onduleur par panneau, clipsé sous le panneau avant de le poser — après, on n\'y accède plus.'
+            : 'Onduleur central à fixer à l\'abri du soleil direct, avec 20 cm d\'air autour.',
+          'Serre les pinces au couple indiqué par le fabricant : trop serré, le cadre se déforme et le verre casse.',
+          'Charge ajoutée : environ ' + sol.poids + ' kg répartis sur la toiture.'
+        ],
+        attention: 'Ne marche JAMAIS sur les panneaux, même « juste pour passer ». Une microfissure ne se voit pas et fait chuter la production pendant des années.',
+        astuce: 'Laisse un passage de 40 cm entre deux rangées : c\'est ce qui permet de nettoyer et de démonter un panneau sans toucher aux autres.'
+      });
+
+      etapes.push({
+        id: 'solaire_raccord',
+        titre: 'Raccorder et déclarer l\'installation solaire',
+        duree: 'une demi-journée + démarches',
+        outils: ['Multimètre', 'Pince à sertir MC4', 'Coffret AC/DC'],
+        details: [
+          'Câblage en série ou en parallèle selon la tension d\'entrée de l\'onduleur — vérifie la tension à vide AVANT de connecter.',
+          'Coffret de protection DC et AC avec parafoudre : c\'est exigé au CONSUEL.',
+          'Déclaration préalable en mairie, convention d\'autoconsommation Enedis, puis attestation CONSUEL avant mise en service.',
+          'Production attendue : environ ' + sol.production.toLocaleString('fr-FR') + ' kWh par an, soit ' +
+            sol.economie + ' € d\'économie estimée.'
+        ],
+        attention: 'Un champ solaire est sous tension dès qu\'il fait jour : il n\'y a pas d\'interrupteur côté panneaux. On câble le matin tôt ou panneaux bâchés, et on ne travaille jamais gants nus sur du DC.'
+      });
+    }
+
+    if (r.elec) {
+      var e = r.elec;
+      var lignes = [
+        'Tranchée de ' + e.longueurTranchee + ' m à ' + Math.round(e.profondeurTranchee * 100) +
+          ' cm de profondeur' + (e.profondeurTranchee > 0.7 ? ' (obligatoire sous un passage de véhicule)' : '') + '.',
+        'Gaine TPC rouge Ø63, lit de sable de 5 cm dessous et dessus, puis grillage avertisseur rouge à 20 cm au-dessus.'
+      ];
+      if (e.circuitPrises) {
+        lignes.push('Prises : câble 3G' + e.circuitPrises.section + ' mm² (chute de tension ' +
+          e.circuitPrises.chutePct + ' % sur ' + e.distance + ' m), ' + e.nbPrises + ' prises IP55.');
+      }
+      if (e.circuitLumiere) {
+        lignes.push('Éclairage : câble 3G' + e.circuitLumiere.section + ' mm², ' + e.nbLampes +
+          ' réglettes LED IP65 fixées sous les chevrons.');
+      }
+      if (e.circuitBorne) {
+        lignes.push('Borne : câble ' + (e.borne.triphase ? '5G' : '3G') + e.circuitBorne.section +
+          ' mm² dédié, protégé par un différentiel 30 mA type A-EV et son propre disjoncteur.');
+      }
+      lignes.push('Piquet de terre au pied de l\'abri, relié au coffret et à toute masse métallique.');
+
+      etapes.push({
+        id: 'elec',
+        titre: 'Amener le courant et poser les équipements',
+        duree: 'une journée (tranchée comprise)',
+        outils: ['Bêche ou trancheuse', 'Aiguille de tirage', 'Pince à dénuder', 'Multimètre', 'Perforateur'],
+        details: lignes,
+        attention: 'Le raccordement au tableau se fait hors tension, et doit être réalisé ou vérifié par un électricien : c\'est ce que demandera ton assurance en cas de sinistre. Une borne de recharge ajoutée sans déclaration peut aussi poser problème avec ton fournisseur.',
+        astuce: 'Passe une deuxième gaine vide dans la même tranchée. Elle ne coûte presque rien aujourd\'hui, et elle t\'évitera de tout rouvrir le jour où tu voudras de la fibre, un portail ou une caméra.'
+      });
+    }
+
     etapes.push({
       id: 'finitions',
       titre: 'Finitions et évacuation de l\'eau',

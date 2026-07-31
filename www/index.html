@@ -147,6 +147,71 @@
         </div>
       </div>
 
+      <div class="card">
+        <h2>☀️ Panneaux solaires</h2>
+        <label class="check">
+          <input type="checkbox" id="f_solaire" />
+          <span>Équiper la toiture en photovoltaïque</span>
+        </label>
+        <div id="solaireForm" class="grid2" style="margin-top:10px">
+          <label>Modèle de panneau
+            <select id="f_panneau"></select>
+          </label>
+          <label>Ensoleillement de la région
+            <select id="f_ensoleillement"></select>
+          </label>
+          <label>Orientation de la pente
+            <select id="f_azimut"></select>
+          </label>
+          <label>Onduleur
+            <select id="f_onduleur">
+              <option value="micro">Micro-onduleurs (1 par panneau)</option>
+              <option value="central">Onduleur central</option>
+            </select>
+          </label>
+          <label>Limiter à N panneaux (0 = au maximum)
+            <input type="number" id="f_maxPanneaux" step="1" min="0" max="60" value="0" />
+          </label>
+          <label>Part autoconsommée (%)
+            <input type="number" id="f_tauxAutoconso" step="5" min="0" max="100" value="60" />
+          </label>
+          <label>Prix du kWh acheté (€)
+            <input type="number" id="f_prixKwh" step="0.01" min="0" max="1" value="0.25" />
+          </label>
+          <label>Tarif de revente du surplus (€)
+            <input type="number" id="f_prixRevente" step="0.005" min="0" max="0.5" value="0.076" />
+          </label>
+        </div>
+        <div id="solaireBilan"></div>
+      </div>
+
+      <div class="card">
+        <h2>🔌 Électricité intégrée</h2>
+        <label class="check">
+          <input type="checkbox" id="f_elec" />
+          <span>Amener le courant sous l'abri</span>
+        </label>
+        <div id="elecForm" class="grid2" style="margin-top:10px">
+          <label>Distance depuis le tableau (m)
+            <input type="number" id="f_distanceTableau" step="1" min="1" max="150" value="20" />
+          </label>
+          <label>Prises étanches
+            <input type="number" id="f_nbPrises" step="1" min="0" max="12" value="2" />
+          </label>
+          <label>Réglettes LED
+            <input type="number" id="f_nbLampes" step="1" min="0" max="12" value="2" />
+          </label>
+          <label>Borne de recharge
+            <select id="f_borneVE"></select>
+          </label>
+          <label class="check">
+            <input type="checkbox" id="f_passageVehicule" checked />
+            <span>La tranchée passe sous un accès véhicule</span>
+          </label>
+        </div>
+        <div id="elecBilan"></div>
+      </div>
+
       <div class="row">
         <button id="btnSave" class="primary">💾 Enregistrer ce projet</button>
         <button id="btnNew" class="ghost">✨ Nouveau</button>
@@ -230,7 +295,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.0';
+    window.APP_VERSION = '1.1';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
