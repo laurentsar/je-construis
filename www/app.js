@@ -1,0 +1,463 @@
+/*
+ * app.js — interface de Je Construis.
+ *
+ * Un seul état (`P`, les paramètres du projet) alimente tout : dès qu'un champ
+ * change, on recalcule et on redessine les six onglets. Il n'y a donc jamais
+ * deux vérités à l'écran — la liste de matériaux, les plans et la marche à
+ * suivre viennent tous du même calcul.
+ *
+ * Persistance : localStorage. Le projet courant est enregistré à chaque
+ * modification (on ne perd rien en fermant l'app), les projets nommés sont
+ * gardés à part, et les cases cochées de la marche à suivre sont retenues par
+ * projet — un chantier dure des semaines.
+ */
+(function () {
+  'use strict';
+
+  var K_COURANT = 'jc:courant';
+  var K_PROJETS = 'jc:projets';
+  var K_PRIX = 'jc:prix';
+  var K_COCHES = 'jc:coches';
+
+  var DEFAUT = {
+    nom: 'Mon carport',
+    longueur: 6, largeur: 4,
+    hautAvant: 2.8, hautArriere: 2.5,
+    poteauxParRangee: 0,
+    sectionPoteau: '150x150',
+    entraxeChevrons: 0.6,
+    debordHaut: 0.2, debordBas: 0.2, debordCote: 0.1,
+    couverture: 'bac_acier',
+    piedPoteau: 'reglable',
+    essence: 'douglas',
+    chargeSup: 0,
+    plotCote: 0.5, plotProfondeur: 0.5,
+    jambesDeForce: true,
+    prix: {}
+  };
+
+  var P = charger(K_COURANT) || Object.assign({}, DEFAUT);
+  P.prix = charger(K_PRIX) || P.prix || {};
+  var R = null;                 // dernier résultat de calcul
+  var coches = charger(K_COCHES) || {};
+
+  // ------------------------------------------------------------------ outils
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html !== undefined) e.innerHTML = html;
+    return e;
+  }
+  function charger(k) {
+    try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; }
+  }
+  function sauver(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+  }
+  function esc(s) {
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  var toastTimer;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+  function euros(x) {
+    return Math.round(x).toLocaleString('fr-FR') + ' €';
+  }
+
+  // ------------------------------------------------------------ formulaire
+  // Champs saisis en centimètres mais stockés en mètres : sur un chantier on
+  // parle en centimètres pour les débords et les plots, en mètres pour le reste.
+  var CHAMPS_CM = ['entraxeChevrons', 'debordHaut', 'debordBas', 'debordCote', 'plotCote', 'plotProfondeur'];
+
+  function remplirSelects() {
+    var sc = $('f_couverture');
+    Object.keys(Calc.COUVERTURES).forEach(function (k) {
+      sc.appendChild(new Option(Calc.COUVERTURES[k].nom, k));
+    });
+    var sp = $('f_piedPoteau');
+    Object.keys(Calc.PIEDS_POTEAU).forEach(function (k) {
+      sp.appendChild(new Option(Calc.PIEDS_POTEAU[k].nom, k));
+    });
+    var se = $('f_essence');
+    Object.keys(Calc.ESSENCES).forEach(function (k) {
+      se.appendChild(new Option(Calc.ESSENCES[k].nom, k));
+    });
+  }
+
+  function formVersEtat() {
+    P.nom = $('f_nom').value || 'Mon carport';
+    ['longueur', 'largeur', 'hautAvant', 'hautArriere'].forEach(function (k) {
+      P[k] = parseFloat($('f_' + k).value) || 0;
+    });
+    CHAMPS_CM.forEach(function (k) {
+      P[k] = (parseFloat($('f_' + k).value) || 0) / 100;
+    });
+    P.poteauxParRangee = parseInt($('f_poteauxParRangee').value, 10) || 0;
+    P.sectionPoteau = $('f_sectionPoteau').value;
+    P.couverture = $('f_couverture').value;
+    P.piedPoteau = $('f_piedPoteau').value;
+    P.essence = $('f_essence').value;
+    P.chargeSup = parseInt($('f_chargeSup').value, 10) || 0;
+    P.jambesDeForce = $('f_jambesDeForce').checked;
+  }
+
+  function etatVersForm() {
+    $('f_nom').value = P.nom || '';
+    ['longueur', 'largeur', 'hautAvant', 'hautArriere'].forEach(function (k) {
+      $('f_' + k).value = P[k];
+    });
+    CHAMPS_CM.forEach(function (k) {
+      $('f_' + k).value = Math.round((P[k] || 0) * 100);
+    });
+    $('f_poteauxParRangee').value = P.poteauxParRangee || 0;
+    $('f_sectionPoteau').value = P.sectionPoteau;
+    $('f_couverture').value = P.couverture;
+    $('f_piedPoteau').value = P.piedPoteau;
+    $('f_essence').value = P.essence;
+    $('f_chargeSup').value = P.chargeSup || 0;
+    $('f_jambesDeForce').checked = P.jambesDeForce !== false;
+  }
+
+  // ------------------------------------------------------------------ rendu
+  function rendreResume() {
+    var g = R.geometrie, s = R.structure;
+    var html = '<div class="resume-grid">' +
+      stat(Calc.arrondi(P.longueur * P.largeur, 1) + ' m²', 'emprise au sol') +
+      stat(g.pentePct + ' %', 'pente (' + g.angle + '°)') +
+      stat(s.nbPoteaux, 'poteaux') +
+      stat(s.nbChevrons, 'chevrons') +
+      stat(R.charges.volumeBois + ' m³', 'de bois (' + Math.round(R.charges.masseBois) + ' kg)') +
+      stat(euros(R.devis.total), 'budget estimé') +
+      '</div>';
+    $('resume').innerHTML = html;
+
+    function stat(v, s2) {
+      return '<div class="stat"><b>' + esc(v) + '</b><span>' + esc(s2) + '</span></div>';
+    }
+  }
+
+  function rendreAlertes() {
+    var box = $('alertes');
+    box.innerHTML = '';
+    if (!R.alertes.length && !R.conseils.length) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    R.alertes.forEach(function (a) {
+      box.appendChild(el('div', 'alerte', '<span class="ico">⚠️</span><span>' + esc(a) + '</span>'));
+    });
+    R.conseils.forEach(function (c) {
+      box.appendChild(el('div', 'conseil', '<span class="ico">💡</span><span>' + esc(c) + '</span>'));
+    });
+  }
+
+  function rendreMateriaux() {
+    var cats = {};
+    R.materiaux.forEach(function (m) {
+      (cats[m.categorie] = cats[m.categorie] || []).push(m);
+    });
+    var html = '';
+    Object.keys(cats).forEach(function (cat) {
+      html += '<div class="cat-title">' + esc(cat) + '</div>';
+      html += '<table class="tbl"><tbody>';
+      cats[cat].forEach(function (m) {
+        html += '<tr><td><strong>' + esc(m.designation) + '</strong>' +
+          (m.section ? '<div class="note">' + esc(m.section) + (m.longueur ? ' · ' + esc(m.longueur) : '') + '</div>' : '') +
+          (m.note ? '<div class="note">' + esc(m.note) + '</div>' : '') +
+          '</td><td class="qte">' + esc(m.qte) + '<div class="note">' + esc(m.unite) + '</div></td></tr>';
+      });
+      html += '</tbody></table>';
+    });
+    $('materiaux').innerHTML = html;
+  }
+
+  function rendrePrix() {
+    var box = $('prixForm');
+    if (box.dataset.built) return;      // les champs gardent le focus pendant la saisie
+    box.dataset.built = '1';
+    var libelles = {
+      bois_m3: 'Bois (€ / m³)',
+      couverture_m2: 'Couverture (€ / m²)',
+      pied_poteau: 'Pied de poteau (€)',
+      beton_sac: 'Sac de béton 35 kg (€)',
+      equerre: 'Équerre / sabot (€)',
+      visserie_forfait: 'Visserie (forfait €)'
+    };
+    Object.keys(libelles).forEach(function (k) {
+      var lab = el('label', null, libelles[k]);
+      var inp = el('input');
+      inp.type = 'number';
+      inp.step = '0.5';
+      inp.value = (P.prix && P.prix[k] !== undefined) ? P.prix[k] : Calc.PRIX_DEFAUT[k];
+      inp.addEventListener('input', function () {
+        P.prix[k] = parseFloat(inp.value) || 0;
+        sauver(K_PRIX, P.prix);
+        recalculer(true);
+      });
+      lab.appendChild(inp);
+      box.appendChild(lab);
+    });
+  }
+
+  function rendreDevis() {
+    var html = '';
+    R.devis.lignes.forEach(function (d) {
+      html += '<div class="devis-ligne"><span>' + esc(d.poste) + '</span><span>' + euros(d.montant) + '</span></div>';
+    });
+    html += '<div class="devis-total"><span>Total estimé</span><span>' + euros(R.devis.total) + '</span></div>';
+    html += '<p class="hint">Hors outillage, location d\'engin et évacuation des déblais.</p>';
+    $('devis').innerHTML = html;
+  }
+
+  function rendreDebit() {
+    var html = '';
+    R.debit.forEach(function (d) {
+      html += '<div class="cat-title">' + esc(d.nom) + ' — ' + esc(d.section) + '</div>';
+      if (d.surMesure) {
+        html += '<div class="alerte"><span class="ico">⚠️</span><span>' + d.nb + ' pièce(s) de ' +
+          d.longueur + ' m : au-delà des barres de 6 m, il faut commander sur mesure ou abouter au-dessus d\'un poteau.</span></div>';
+        return;
+      }
+      html += '<p class="hint">' + d.nb + ' pièce(s) de ' + d.longueur + ' m → <strong>' + d.nbBarres +
+        ' barre(s) de ' + d.barre + ' m</strong>, chute totale ' + d.chuteTotale + ' m.</p>';
+      d.detail.forEach(function (b) {
+        var total = d.barre;
+        html += '<div class="barre">';
+        b.coupes.forEach(function (c) {
+          html += '<div class="piece" style="width:' + (c / total * 100) + '%">' + c + ' m</div>';
+        });
+        if (b.chute > 0.02) {
+          html += '<div class="chute" style="width:' + (b.chute / total * 100) + '%">' +
+            (b.chute >= 0.3 ? b.chute + ' m' : '') + '</div>';
+        }
+        html += '</div>';
+      });
+    });
+    $('debit').innerHTML = html;
+  }
+
+  function rendrePlans() {
+    $('plans').innerHTML = Plans.toutes(R).join('');
+  }
+
+  function rendreEtapes() {
+    var etapes = Steps.construire(R);
+    var cle = P.nom || 'projet';
+    var fait = coches[cle] || {};
+    var box = $('etapes');
+    box.innerHTML = '';
+
+    etapes.forEach(function (e, i) {
+      var done = !!fait[e.id];
+      var card = el('div', 'etape' + (done ? ' done' : ''));
+
+      var head = el('div', 'etape-head');
+      head.innerHTML = '<div class="etape-num">' + (done ? '✓' : (i + 1)) + '</div>' +
+        '<div class="etape-titre">' + esc(e.titre) + '<div class="etape-duree">⏱ ' + esc(e.duree) + '</div></div>' +
+        '<div style="font-size:18px">' + (done ? '☑' : '☐') + '</div>';
+      head.addEventListener('click', function (ev) {
+        // Un clic sur la case coche, un clic ailleurs déplie : deux gestes, un
+        // seul bandeau, sans bouton minuscule à viser.
+        if (ev.target === head.lastElementChild) {
+          fait[e.id] = !fait[e.id];
+          coches[cle] = fait;
+          sauver(K_COCHES, coches);
+          rendreEtapes();
+        } else {
+          card.classList.toggle('open');
+        }
+      });
+
+      var body = el('div', 'etape-body');
+      var html = '';
+      if (e.outils && e.outils.length) {
+        html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
+      }
+      html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
+      if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
+      if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
+      body.innerHTML = html;
+
+      card.appendChild(head);
+      card.appendChild(body);
+      box.appendChild(card);
+    });
+
+    var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
+    $('progressBar').style.width = (nb / etapes.length * 100) + '%';
+    $('progressText').textContent = nb + ' étape(s) sur ' + etapes.length +
+      (nb === etapes.length ? ' — terminé, bravo !' : ' — coche au fur et à mesure du chantier.');
+  }
+
+  function rendrePied() {
+    var pied = Calc.PIEDS_POTEAU[P.piedPoteau];
+    $('piedDetail').innerHTML =
+      '<p class="hint">' + esc(pied.note) + '</p>' +
+      '<div class="pc">' +
+      '<div><b style="color:var(--ok)">Pour</b><ul>' +
+        pied.pour.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' +
+      '<div><b style="color:var(--bad)">Contre</b><ul>' +
+        pied.contre.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' +
+      '</div>';
+    $('couvHint').textContent = Calc.COUVERTURES[P.couverture].note +
+      ' Pente minimale : ' + Calc.COUVERTURES[P.couverture].penteMini + ' %.';
+  }
+
+  function rendreProjets() {
+    var liste = charger(K_PROJETS) || [];
+    var box = $('projets');
+    box.innerHTML = '';
+    if (!liste.length) {
+      box.innerHTML = '<p class="hint">Aucun projet enregistré. Le projet en cours est gardé automatiquement.</p>';
+      return;
+    }
+    liste.forEach(function (pr, i) {
+      var d = el('div', 'projet');
+      d.innerHTML = '<div style="flex:1"><div class="p-nom">' + esc(pr.nom) + '</div>' +
+        '<div class="p-sub">' + pr.longueur + ' × ' + pr.largeur + ' m · ' +
+        esc((Calc.COUVERTURES[pr.couverture] || {}).nom || '') + '</div></div>';
+      var open = el('button', null, '📂');
+      open.title = 'Ouvrir';
+      open.addEventListener('click', function () {
+        P = Object.assign({}, DEFAUT, pr);
+        etatVersForm();
+        recalculer();
+        montrerOnglet('projet');
+        toast('Projet « ' + pr.nom + ' » chargé.');
+      });
+      var del = el('button', null, '🗑');
+      del.title = 'Supprimer';
+      del.addEventListener('click', function () {
+        liste.splice(i, 1);
+        sauver(K_PROJETS, liste);
+        rendreProjets();
+        toast('Projet supprimé.');
+      });
+      d.appendChild(open);
+      d.appendChild(del);
+      box.appendChild(d);
+    });
+  }
+
+  // ------------------------------------------------------------- orchestration
+  function recalculer(silencieux) {
+    R = Calc.calculer(P);
+    rendreResume();
+    rendreAlertes();
+    rendreMateriaux();
+    rendrePrix();
+    rendreDevis();
+    rendreDebit();
+    rendrePlans();
+    rendreEtapes();
+    rendrePied();
+    sauver(K_COURANT, P);
+    if (!silencieux && R.alertes.length) {
+      // Rien de bloquant : l'onglet Matériaux affiche le détail.
+    }
+  }
+
+  function montrerOnglet(nom) {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.classList.toggle('active', t.dataset.tab === nom);
+    });
+    document.querySelectorAll('.panel').forEach(function (p) {
+      p.classList.toggle('active', p.id === 'tab-' + nom);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function texteMateriaux() {
+    var l = ['JE CONSTRUIS — ' + (P.nom || 'Carport'),
+      P.longueur + ' m × ' + P.largeur + ' m · hauteurs ' + P.hautAvant + ' / ' + P.hautArriere + ' m',
+      'Pente ' + R.geometrie.pentePct + ' % · ' + Calc.arrondi(P.longueur * P.largeur, 1) + ' m² d\'emprise',
+      ''];
+    var cat = '';
+    R.materiaux.forEach(function (m) {
+      if (m.categorie !== cat) { cat = m.categorie; l.push('— ' + cat.toUpperCase() + ' —'); }
+      l.push('• ' + m.qte + ' ' + m.unite + '  ' + m.designation +
+        (m.section ? '  (' + m.section + (m.longueur ? ', ' + m.longueur : '') + ')' : ''));
+    });
+    l.push('', 'Budget estimé : ' + euros(R.devis.total) + ' (indicatif)');
+    return l.join('\n');
+  }
+
+  // ------------------------------------------------------------------ départ
+  function init() {
+    remplirSelects();
+    etatVersForm();
+
+    // Toute modification recalcule : pas de bouton « valider » à oublier.
+    document.querySelectorAll('input, select').forEach(function (input) {
+      if (input.closest('#prixForm')) return;
+      input.addEventListener('input', function () {
+        formVersEtat();
+        recalculer();
+      });
+      input.addEventListener('change', function () {
+        formVersEtat();
+        recalculer();
+      });
+    });
+
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.addEventListener('click', function () { montrerOnglet(t.dataset.tab); });
+    });
+
+    $('btnSave').addEventListener('click', function () {
+      var liste = charger(K_PROJETS) || [];
+      var copie = JSON.parse(JSON.stringify(P));
+      var i = liste.findIndex(function (x) { return x.nom === copie.nom; });
+      if (i >= 0) liste[i] = copie; else liste.push(copie);
+      sauver(K_PROJETS, liste);
+      rendreProjets();
+      toast('Projet « ' + copie.nom + ' » enregistré.');
+    });
+
+    $('btnNew').addEventListener('click', function () {
+      P = Object.assign({}, DEFAUT, { prix: P.prix });
+      P.nom = 'Carport ' + new Date().toLocaleDateString('fr-FR');
+      etatVersForm();
+      recalculer();
+      toast('Nouveau projet.');
+    });
+
+    $('btnProjets').addEventListener('click', function () {
+      montrerOnglet('infos');
+      rendreProjets();
+    });
+
+    $('btnCopyMat').addEventListener('click', function () {
+      var txt = texteMateriaux();
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(function () { toast('Liste copiée.'); },
+          function () { toast('Copie impossible.'); });
+      } else {
+        toast('Copie non disponible ici.');
+      }
+    });
+
+    $('btnPrint').addEventListener('click', function () { window.print(); });
+
+    $('verChip').textContent = 'v' + (window.APP_VERSION || '');
+    $('verText').textContent = window.APP_VERSION || '';
+
+    recalculer();
+    rendreProjets();
+
+    if (window.AutoBackup && AutoBackup.mount) {
+      try { AutoBackup.mount($('backupPanel')); } catch (e) {}
+    }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();

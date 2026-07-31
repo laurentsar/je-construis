@@ -1,0 +1,13 @@
+{
+  "name": "Je Construis",
+  "short_name": "Je Construis",
+  "description": "Plans de carport bois : tes cotes, la liste des matériaux, le débit de coupe et la marche à suivre.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0c141d",
+  "theme_color": "#101a24",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

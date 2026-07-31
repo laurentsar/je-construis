@@ -1,0 +1,8 @@
+{
+  "appId": "com.laurent.jeconstruis",
+  "appName": "Je Construis",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}

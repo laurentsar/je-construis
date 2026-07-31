@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101a24" />
+  <title>Je Construis</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="img/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <img class="brand-logo" src="img/icon-192.png" alt="" />
+      <div>
+        <h1>Je Construis <span id="verChip" class="ver-chip"></span></h1>
+        <p class="sub">Carport bois — tes cotes, tes matériaux, ta marche à suivre</p>
+      </div>
+    </div>
+    <button id="btnProjets" class="icon-btn" title="Mes projets">📂</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="projet">📐 Projet</button>
+    <button class="tab" data-tab="materiaux">📋 Matériaux</button>
+    <button class="tab" data-tab="debit">✂️ Débit</button>
+    <button class="tab" data-tab="plans">📏 Plans</button>
+    <button class="tab" data-tab="etapes">🔨 Étapes</button>
+    <button class="tab" data-tab="infos">ℹ️ Infos</button>
+  </nav>
+
+  <main>
+    <!-- ================= PROJET ================= -->
+    <section class="panel active" id="tab-projet">
+      <div class="card" id="resume"></div>
+
+      <div class="card">
+        <h2>Dimensions</h2>
+        <div class="grid2">
+          <label>Nom du projet
+            <input type="text" id="f_nom" placeholder="Carport 2 voitures" />
+          </label>
+          <label>Longueur (m)
+            <input type="number" id="f_longueur" step="0.1" min="2" max="12" value="6" />
+          </label>
+          <label>Largeur (m)
+            <input type="number" id="f_largeur" step="0.1" min="2" max="8" value="4" />
+          </label>
+          <label>Hauteur côté haut (m)
+            <input type="number" id="f_hautAvant" step="0.05" min="2" max="4" value="2.8" />
+          </label>
+          <label>Hauteur côté bas (m)
+            <input type="number" id="f_hautArriere" step="0.05" min="1.8" max="4" value="2.5" />
+          </label>
+          <label>Poteaux par file
+            <select id="f_poteauxParRangee">
+              <option value="0">Automatique</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">La pente va du côté haut vers le côté bas, dans le sens de la largeur — comme sur un vrai monopente.</p>
+      </div>
+
+      <div class="card">
+        <h2>Structure</h2>
+        <div class="grid2">
+          <label>Section des poteaux
+            <select id="f_sectionPoteau">
+              <option value="100x100">100 × 100 mm</option>
+              <option value="120x120">120 × 120 mm</option>
+              <option value="150x150" selected>150 × 150 mm</option>
+              <option value="175x175">175 × 175 mm</option>
+            </select>
+          </label>
+          <label>Entraxe des chevrons (cm)
+            <input type="number" id="f_entraxeChevrons" step="5" min="40" max="90" value="60" />
+          </label>
+          <label>Essence / traitement
+            <select id="f_essence"></select>
+          </label>
+          <label>Charge (neige)
+            <select id="f_chargeSup">
+              <option value="0">Plaine (&lt; 400 m)</option>
+              <option value="1">Neige marquée (400 – 900 m)</option>
+              <option value="2">Montagne (&gt; 900 m)</option>
+            </select>
+          </label>
+          <label>Débord côté haut (cm)
+            <input type="number" id="f_debordHaut" step="5" min="0" max="80" value="20" />
+          </label>
+          <label>Débord côté bas (cm)
+            <input type="number" id="f_debordBas" step="5" min="0" max="80" value="20" />
+          </label>
+          <label>Débord en bout (cm)
+            <input type="number" id="f_debordCote" step="5" min="0" max="80" value="10" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="f_jambesDeForce" checked />
+            <span>Jambes de force (contreventement)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Couverture</h2>
+        <select id="f_couverture" class="wide"></select>
+        <p class="hint" id="couvHint"></p>
+      </div>
+
+      <div class="card">
+        <h2>Pieds de poteau et fondations</h2>
+        <select id="f_piedPoteau" class="wide"></select>
+        <div id="piedDetail" class="pied-detail"></div>
+        <div class="grid2">
+          <label>Côté des plots (cm)
+            <input type="number" id="f_plotCote" step="5" min="30" max="80" value="50" />
+          </label>
+          <label>Profondeur des plots (cm)
+            <input type="number" id="f_plotProfondeur" step="5" min="40" max="120" value="50" />
+          </label>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="btnSave" class="primary">💾 Enregistrer ce projet</button>
+        <button id="btnNew" class="ghost">✨ Nouveau</button>
+      </div>
+    </section>
+
+    <!-- ================= MATÉRIAUX ================= -->
+    <section class="panel" id="tab-materiaux">
+      <div class="card" id="alertes"></div>
+      <div class="card">
+        <h2>Liste des matériaux</h2>
+        <div id="materiaux"></div>
+      </div>
+      <div class="card">
+        <h2>Estimation du budget</h2>
+        <p class="hint">Prix indicatifs, à ajuster avec ceux de ton négoce. Ils sont enregistrés avec l'app.</p>
+        <div id="prixForm" class="grid2"></div>
+        <div id="devis"></div>
+      </div>
+      <div class="row">
+        <button id="btnCopyMat" class="ghost">📋 Copier la liste</button>
+        <button id="btnPrint" class="ghost">🖨️ Imprimer / PDF</button>
+      </div>
+    </section>
+
+    <!-- ================= DÉBIT ================= -->
+    <section class="panel" id="tab-debit">
+      <div class="card">
+        <h2>Débit de coupe</h2>
+        <p class="hint">Comment sortir toutes les pièces des barres du commerce (3, 4, 5 et 6 m), avec 3 mm de trait de scie par coupe. Le calcul range d'abord les pièces les plus longues : c'est ce qui limite les chutes.</p>
+        <div id="debit"></div>
+      </div>
+    </section>
+
+    <!-- ================= PLANS ================= -->
+    <section class="panel" id="tab-plans">
+      <div class="card">
+        <h2>Plans cotés</h2>
+        <p class="hint">Dessinés à partir de tes cotes : change une dimension, les plans suivent.</p>
+        <div id="plans"></div>
+      </div>
+    </section>
+
+    <!-- ================= ÉTAPES ================= -->
+    <section class="panel" id="tab-etapes">
+      <div class="card">
+        <h2>Marche à suivre</h2>
+        <div id="progress" class="progress"><div id="progressBar"></div></div>
+        <p class="hint" id="progressText"></p>
+      </div>
+      <div id="etapes"></div>
+    </section>
+
+    <!-- ================= INFOS ================= -->
+    <section class="panel" id="tab-infos">
+      <div class="card warn">
+        <h2>⚠️ Ce que cette app fait — et ne fait pas</h2>
+        <p>Les sections de bois proposées viennent des portées usuelles de la charpente courante (couverture légère, neige de plaine sauf réglage contraire). C'est une base saine pour <strong>commander</strong> ton bois et comprendre ce que tu montes.</p>
+        <p><strong>Ce n'est pas une note de calcul.</strong> Pour un ouvrage accolé à la maison, une portée hors des tables, une zone de vent exposée ou un doute sur le sol, fais valider par un charpentier ou un bureau d'études (Eurocode 5, DTU 31.1).</p>
+        <p>Les prix sont des ordres de grandeur, pas des devis.</p>
+      </div>
+
+      <div class="card">
+        <h2>Mes projets</h2>
+        <div id="projets"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sauvegarde automatique</h2>
+        <p class="hint">Sauvegarde tes projets vers Home Assistant, et les restaure après une réinstallation de l'app.</p>
+        <div id="backupPanel"></div>
+      </div>
+
+      <div class="card">
+        <h2>À propos</h2>
+        <p class="hint">Je Construis — version <span id="verText"></span>. Fonctionne entièrement hors ligne : aucun compte, aucune donnée envoyée, tout reste sur ton téléphone.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    window.APP_VERSION = '1.0';
+    window.UPDATE_REPO = 'laurentsar/je-construis';
+    window.BACKUP_APP = 'je-construis';
+    window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
+  </script>
+  <script src="calc.js"></script>
+  <script src="plans.js"></script>
+  <script src="steps.js"></script>
+  <script src="app.js"></script>
+  <script src="autobackup.js"></script>
+  <script src="update-check.js"></script>
+</body>
+</html>
