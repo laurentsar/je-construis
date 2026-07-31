@@ -1,7 +1,7 @@
 /* Je Construis — service worker. L'app est entièrement hors ligne : tout le
    shell est mis en cache, et rien n'a besoin du réseau (seule la vérification
    de mise à jour interroge GitHub, et elle échoue silencieusement). */
-const CACHE = 'je-construis-v1.1';
+const CACHE = 'je-construis-v1.2';
 const SHELL = [
   'index.html', 'styles.css', 'app.js', 'calc.js', 'plans.js', 'steps.js',
   'update-check.js', 'autobackup.js', 'manifest.webmanifest',

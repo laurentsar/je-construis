@@ -230,7 +230,7 @@
     function circuit(nom, c) {
       if (!c) return '';
       return '<div class="stat"><b>' + c.section + ' mm²</b><span>' + nom + ' — chute ' +
-        c.chutePct + ' %</span></div>';
+        c.chutePct + ' %' + (c.disjoncteur ? ' · ' + c.disjoncteur + ' A' : '') + '</span></div>';
     }
     $('elecBilan').innerHTML = '<div class="resume-grid" style="margin-top:10px">' +
       circuit('prises', e.circuitPrises) + circuit('éclairage', e.circuitLumiere) +

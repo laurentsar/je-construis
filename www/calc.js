@@ -343,11 +343,17 @@
   ];
   var RHO_CUIVRE = 0.023;      // Ω·mm²/m
 
-  function sectionCable(courant, longueur, triphase, chuteMaxPct) {
+  // `sectionMini` : plancher imposé par l'usage, indépendamment du calcul. La
+  // chute de tension autoriserait souvent plus fin, mais la NF C 15-100 fixe des
+  // minimums par type de circuit — et sur une ligne ENTERRÉE vers un bâtiment
+  // annexe, on ne descend pas en dessous de 2,5 mm² pour des prises.
+  function sectionCable(courant, longueur, triphase, chuteMaxPct, sectionMini) {
     var u = triphase ? 400 : 230;
     var chuteMax = (chuteMaxPct || 5) / 100 * u;
+    var mini = sectionMini || 0;
     for (var i = 0; i < SECTIONS_CABLE.length; i++) {
       var c = SECTIONS_CABLE[i];
+      if (c.s < mini) continue;
       if (c.iz < courant) continue;
       var chute = triphase
         ? Math.sqrt(3) * RHO_CUIVRE * longueur * courant / c.s
@@ -375,9 +381,28 @@
     var borne = BORNES_VE[p.borneVE] || BORNES_VE.aucune;
 
     // Circuit prises + éclairage : 16 A suffit très largement pour un abri.
-    var circuitPrises = nbPrises > 0 ? sectionCable(16, longueur, false, 5) : null;
-    var circuitLumiere = nbLampes > 0 ? sectionCable(10, longueur, false, 3) : null;
-    var circuitBorne = borne.kw > 0 ? sectionCable(borne.courant * 1.25, longueur, borne.triphase, 5) : null;
+    // Minimums d'usage : 2,5 mm² pour des prises (1,5 mm² n'est admis que
+    // jusqu'à 5 prises, et jamais sur une ligne enterrée d'annexe), 1,5 mm²
+    // pour l'éclairage, 2,5 mm² pour une borne, qui exige en plus un circuit
+    // dédié.
+    var circuitPrises = nbPrises > 0 ? sectionCable(16, longueur, false, 5, 2.5) : null;
+    var circuitLumiere = nbLampes > 0 ? sectionCable(10, longueur, false, 3, 1.5) : null;
+    var circuitBorne = borne.kw > 0
+      ? sectionCable(borne.courant * 1.25, longueur, borne.triphase, 5, 2.5) : null;
+
+    // Calibre du disjoncteur : celui du circuit, borné par le courant admissible
+    // de la section retenue — protéger un câble au-dessus de son Iz n'a pas de sens.
+    function calibre(circuit, souhaite) {
+      if (!circuit) return null;
+      var calibres = [10, 16, 20, 25, 32, 40, 50, 63];
+      for (var i = calibres.length - 1; i >= 0; i--) {
+        if (calibres[i] <= circuit.iz && calibres[i] >= souhaite) return calibres[i];
+      }
+      return Math.min(souhaite, circuit.iz);
+    }
+    if (circuitPrises) circuitPrises.disjoncteur = calibre(circuitPrises, 16);
+    if (circuitLumiere) circuitLumiere.disjoncteur = calibre(circuitLumiere, 10);
+    if (circuitBorne) circuitBorne.disjoncteur = calibre(circuitBorne, borne.courant);
 
     if (borne.kw > 0 && !circuitBorne) {
       out.alertes.push('Borne ' + borne.nom + ' à ' + longueur +
@@ -722,14 +747,16 @@
       if (elec.circuitPrises) {
         ligne('Électricité', 'Câble U-1000 R2V 3G' + elec.circuitPrises.section + ' (prises)',
           null, 0, elec.cableTotal, 'ml',
-          'Chute de tension ' + elec.circuitPrises.chutePct + ' % sur ' + elec.distance + ' m');
+          'Chute de tension ' + elec.circuitPrises.chutePct + ' % sur ' + elec.distance +
+          ' m · disjoncteur ' + elec.circuitPrises.disjoncteur + ' A');
         ligne('Électricité', 'Prises étanches IP55', null, 0, elec.nbPrises, 'u',
           'Sous l\'abri, à 1 m du sol minimum');
       }
       if (elec.circuitLumiere) {
         ligne('Électricité', 'Câble U-1000 R2V 3G' + elec.circuitLumiere.section + ' (éclairage)',
           null, 0, elec.cableTotal, 'ml',
-          'Chute limitée à 3 % : au-delà, les LED faiblissent en bout de ligne');
+          'Chute limitée à 3 % (' + elec.circuitLumiere.chutePct + ' % ici) · disjoncteur ' +
+          elec.circuitLumiere.disjoncteur + ' A');
         ligne('Électricité', 'Réglettes LED étanches IP65', null, 0, elec.nbLampes, 'u',
           'Fixées sous les chevrons, entre deux pannes');
         ligne('Électricité', 'Détecteur de mouvement extérieur', null, 0, 1, 'u',
@@ -739,7 +766,8 @@
         ligne('Électricité', 'Câble U-1000 R2V ' + (elec.borne.triphase ? '5G' : '3G') +
           elec.circuitBorne.section + ' (borne)', null, 0, elec.cableTotal, 'ml',
           'Chute de tension ' + elec.circuitBorne.chutePct + ' % — calculée pour ' +
-          elec.borne.courant + ' A sur ' + elec.distance + ' m');
+          elec.borne.courant + ' A (majorés de 25 % en charge continue) sur ' + elec.distance +
+          ' m · disjoncteur dédié ' + elec.circuitBorne.disjoncteur + ' A');
         ligne('Électricité', elec.borne.nom, null, 0, 1, 'u',
           'Sur pied ou fixée au poteau, à 90 – 120 cm du sol');
         ligne('Électricité', 'Différentiel 30 mA type A-EV (ou type B)', null, 0, 1, 'u',
