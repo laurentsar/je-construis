@@ -492,8 +492,25 @@
     var liste = charger(K_PROJETS) || [];
     var box = $('projets');
     box.innerHTML = '';
+
+    // Projet permanent : le Traducteur Gemma. Ce n'est pas un carport (il n'a
+    // pas de cotes), on l'épingle donc en tête de la liste et son ouverture
+    // mène au guide de montage, pas au formulaire dimensions.
+    var gem = el('div', 'projet');
+    gem.innerHTML = '<div style="flex:1"><div class="p-nom">🌍 Traducteur Gemma</div>' +
+      '<div class="p-sub">Traducteur vocal hors ligne · guide de montage</div></div>';
+    var gemOpen = el('button', null, '📂');
+    gemOpen.title = 'Ouvrir le guide de montage';
+    gemOpen.addEventListener('click', function () {
+      rendreEtapesGemma();
+      montrerOnglet('gemma');
+    });
+    gem.appendChild(gemOpen);
+    box.appendChild(gem);
+
     if (!liste.length) {
-      box.innerHTML = '<p class="hint">Aucun projet enregistré. Le projet en cours est gardé automatiquement.</p>';
+      box.appendChild(el('p', 'hint',
+        'Aucun carport enregistré pour l\'instant. Le carport en cours est gardé automatiquement.'));
       return;
     }
     liste.forEach(function (pr, i) {
@@ -612,6 +629,11 @@
     });
 
     $('btnProjets').addEventListener('click', function () {
+      montrerOnglet('infos');
+      rendreProjets();
+    });
+
+    $('btnRetourProjets').addEventListener('click', function () {
       montrerOnglet('infos');
       rendreProjets();
     });
