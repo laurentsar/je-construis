@@ -420,6 +420,60 @@
       (nb === etapes.length ? ' — terminé, bravo !' : ' — coche au fur et à mesure du chantier.');
   }
 
+  // Le Traducteur Gemma est un second projet : mêmes cartes cochables que la
+  // marche à suivre du carport, mais des étapes fixes (elles ne dépendent
+  // d'aucune cote) et un jeu de cases à part, gardé sous une clé dédiée.
+  function rendreEtapesGemma() {
+    if (!global_GemmaSteps()) return;
+    var etapes = window.GemmaSteps.construire();
+    var fait = coches['__gemma__'] || {};
+    var box = $('etapesGemma');
+    box.innerHTML = '';
+
+    etapes.forEach(function (e, i) {
+      var done = !!fait[e.id];
+      var card = el('div', 'etape' + (done ? ' done' : ''));
+
+      var head = el('div', 'etape-head');
+      head.innerHTML = '<div class="etape-num">' + (done ? '✓' : (i + 1)) + '</div>' +
+        '<div class="etape-titre">' + esc(e.titre) + '<div class="etape-duree">⏱ ' + esc(e.duree) + '</div></div>' +
+        '<div style="font-size:18px">' + (done ? '☑' : '☐') + '</div>';
+      head.addEventListener('click', function (ev) {
+        if (ev.target === head.lastElementChild) {
+          fait[e.id] = !fait[e.id];
+          coches['__gemma__'] = fait;
+          sauver(K_COCHES, coches);
+          rendreEtapesGemma();
+        } else {
+          card.classList.toggle('open');
+        }
+      });
+
+      var body = el('div', 'etape-body');
+      var html = '';
+      if (e.outils && e.outils.length) {
+        html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
+      }
+      html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
+      if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
+      if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
+      body.innerHTML = html;
+
+      card.appendChild(head);
+      card.appendChild(body);
+      box.appendChild(card);
+    });
+
+    var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
+    $('progressBarGemma').style.width = (nb / etapes.length * 100) + '%';
+    $('progressTextGemma').textContent = nb + ' étape(s) sur ' + etapes.length +
+      (nb === etapes.length ? ' — appareil monté, bravo !' : ' — coche au fur et à mesure du montage.');
+  }
+
+  function global_GemmaSteps() {
+    return window.GemmaSteps && typeof window.GemmaSteps.construire === 'function';
+  }
+
   function rendrePied() {
     var pied = Calc.PIEDS_POTEAU[P.piedPoteau];
     $('piedDetail').innerHTML =
@@ -578,6 +632,7 @@
     $('verText').textContent = window.APP_VERSION || '';
 
     recalculer();
+    rendreEtapesGemma();
     rendreProjets();
 
     if (window.AutoBackup && AutoBackup.mount) {

@@ -27,6 +27,7 @@
     <button class="tab" data-tab="debit">✂️ Débit</button>
     <button class="tab" data-tab="plans">📏 Plans</button>
     <button class="tab" data-tab="etapes">🔨 Étapes</button>
+    <button class="tab" data-tab="gemma">🌍 Traducteur</button>
     <button class="tab" data-tab="infos">ℹ️ Infos</button>
   </nav>
 
@@ -265,6 +266,22 @@
       <div id="etapes"></div>
     </section>
 
+    <!-- ================= TRADUCTEUR GEMMA ================= -->
+    <section class="panel" id="tab-gemma">
+      <div class="card">
+        <h2>🌍 Monter le Traducteur Gemma</h2>
+        <p class="hint">Un deuxième projet à construire, sur le même principe que le carport : ici, un petit traducteur vocal <strong>hors ligne</strong> à assembler soi-même, à partir du projet open-source <em>gemma-translator</em> de Google Creative Lab (Apache 2.0). Il traduit la voix de deux personnes qui se font face, sur un Raspberry Pi 5, sans rien envoyer sur internet une fois installé.</p>
+        <div id="progressGemma" class="progress"><div id="progressBarGemma"></div></div>
+        <p class="hint" id="progressTextGemma"></p>
+      </div>
+      <div id="etapesGemma"></div>
+      <div class="card">
+        <h2>À savoir</h2>
+        <p class="hint">Ce projet demande du matériel (Raspberry Pi 5 8 Go, écran, micro, haut-parleur) et une connexion internet le temps d'installer le modèle. C'est un guide de montage : le logiciel de traduction, lui, tourne sur l'appareil, pas dans cette application.</p>
+        <p class="hint">Code source et licence : github.com/google-gemma/gemma-translator</p>
+      </div>
+    </section>
+
     <!-- ================= INFOS ================= -->
     <section class="panel" id="tab-infos">
       <div class="card warn">
@@ -295,7 +312,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.2';
+    window.APP_VERSION = '1.3';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
@@ -303,6 +320,7 @@
   <script src="calc.js"></script>
   <script src="plans.js"></script>
   <script src="steps.js"></script>
+  <script src="steps_gemma.js"></script>
   <script src="app.js"></script>
   <script src="autobackup.js"></script>
   <script src="update-check.js"></script>
