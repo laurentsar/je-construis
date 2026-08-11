@@ -15,14 +15,15 @@
       <img class="brand-logo" src="img/icon-192.png" alt="" />
       <div>
         <h1>Je Construis <span id="verChip" class="ver-chip"></span></h1>
-        <p class="sub">Carport bois — tes cotes, tes matériaux, ta marche à suivre</p>
+        <p class="sub">2 projets à construire soi-même, pas à pas</p>
       </div>
     </div>
     <button id="btnProjets" class="icon-btn" title="Mes projets">📂</button>
   </header>
 
   <nav class="tabs" id="tabs">
-    <button class="tab active" data-tab="projet">📐 Projet</button>
+    <button class="tab active" data-tab="accueil">🏠 Accueil</button>
+    <button class="tab" data-tab="projet">📐 Projet</button>
     <button class="tab" data-tab="materiaux">📋 Matériaux</button>
     <button class="tab" data-tab="debit">✂️ Débit</button>
     <button class="tab" data-tab="plans">📏 Plans</button>
@@ -31,8 +32,34 @@
   </nav>
 
   <main>
+    <!-- ================= ACCUEIL ================= -->
+    <section class="panel active" id="tab-accueil">
+      <div class="card">
+        <h2>Mes projets</h2>
+        <p class="hint">Deux projets à construire soi-même, pas à pas.</p>
+        <div class="projets-home">
+          <button type="button" class="projet-home" id="homeCarport">
+            <span class="ph-ico">🏗️</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Carport bois</span>
+              <span class="ph-sub">Cotes, matériaux, plans et marche à suivre</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
+          <button type="button" class="projet-home" id="homeGemma">
+            <span class="ph-ico">🌍</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Traducteur Gemma</span>
+              <span class="ph-sub">Traducteur vocal hors ligne · guide de montage</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= PROJET ================= -->
-    <section class="panel active" id="tab-projet">
+    <section class="panel" id="tab-projet">
       <div class="card" id="resume"></div>
 
       <div class="card">
@@ -312,7 +339,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.4';
+    window.APP_VERSION = '1.5';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
