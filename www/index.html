@@ -304,8 +304,29 @@
       <div id="etapesGemma"></div>
       <div class="card">
         <h2>À savoir</h2>
-        <p class="hint">Ce projet demande du matériel (Raspberry Pi 5 8 Go, écran, micro, haut-parleur) et une connexion internet le temps d'installer le modèle. C'est un guide de montage : le logiciel de traduction, lui, tourne sur l'appareil, pas dans cette application.</p>
-        <p class="hint">Code source et licence : github.com/google-gemma/gemma-translator</p>
+        <p class="hint">C'est un guide de montage : le logiciel de traduction tourne sur l'appareil une fois assemblé, pas dans cette application.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Comment ça marche</strong></p>
+        <p class="hint">La voix est transcrite par <strong>Moonshine</strong> (speech-to-text), traduite par le modèle <strong>Gemma 4 (gemma4-e2b)</strong> via LiteRT-LM, puis relue par <strong>moonshine-voice</strong> (text-to-speech). Les trois tournent en local sur le Raspberry Pi — aucun aller-retour serveur pendant la traduction. Chaque voie (une par personne) fait défiler ses langues au clavier ; la liste des langues disponibles dépend du modèle installé, à vérifier dans le dépôt au moment du montage.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Hors ligne / en ligne</strong></p>
+        <p class="hint">Seul le téléchargement du modèle (une fois, à l'étape « Télécharger le modèle Gemma ») demande internet et un compte Hugging Face. Une fois le modèle en place, l'appareil traduit sans rien envoyer sur le réseau.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Matériel à prévoir</strong></p>
+        <ul class="hint" style="margin:4px 0 0; padding-left:18px">
+          <li>Raspberry Pi 5 8 Go + alimentation officielle 27 W</li>
+          <li>Carte microSD 32 Go (ou SSD NVMe + HAT)</li>
+          <li>Microphone USB et haut-parleur (ou sortie casque)</li>
+          <li>Écran, idéalement tactile, type kiosque 480 × 320</li>
+          <li>Dissipateur ou ventilateur officiel (le Pi 5 chauffe sous le modèle)</li>
+          <li>Imprimante 3D pour le boîtier (fichiers STL fournis par le dépôt)</li>
+        </ul>
+
+        <p class="hint" style="margin-top:12px"><strong>Logiciel</strong></p>
+        <p class="hint">Raspberry Pi OS 64 bits, Python 3.10+ et Node.js 18+ (20 LTS conseillé) — les scripts du projet (<code>setup.sh</code>, <code>download_model.sh</code>) les installent pour toi.</p>
+
+        <p class="hint" style="margin-top:12px">Ce n'est pas un produit officiel Google : le projet n'est pas couvert par leur programme de récompense de failles (VRP), et aucun budget n'est communiqué pour le matériel — à chiffrer toi-même selon les prix du moment.</p>
+        <p class="hint">Code source et licence : github.com/google-gemma/gemma-translator (Apache 2.0)</p>
       </div>
     </section>
 
@@ -339,7 +360,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.5';
+    window.APP_VERSION = '1.6';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
