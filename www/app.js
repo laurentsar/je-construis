@@ -633,6 +633,15 @@
       rendreProjets();
     });
 
+    $('homeCarport').addEventListener('click', function () {
+      montrerOnglet('projet');
+    });
+
+    $('homeGemma').addEventListener('click', function () {
+      rendreEtapesGemma();
+      montrerOnglet('gemma');
+    });
+
     $('btnRetourProjets').addEventListener('click', function () {
       montrerOnglet('infos');
       rendreProjets();
