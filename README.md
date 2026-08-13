@@ -8,10 +8,6 @@ Tout est calculé sur le téléphone : **aucun compte, aucun réseau, aucune don
 envoyée**. L'app fonctionne entièrement hors ligne, y compris au fond d'un
 terrain sans 4G.
 
-> Ce dépôt héberge aussi une seconde application indépendante : **[Lecteur
-> IPTV](iptv-lecteur/README.md)**, un lecteur de flux M3U / Xtream Codes
-> (`iptv-lecteur/`, sa propre APK).
-
 ## Ce que l'app fait
 
 | Onglet | Contenu |
