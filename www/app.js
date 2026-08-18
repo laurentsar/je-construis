@@ -430,6 +430,12 @@
       if (e.outils && e.outils.length) {
         html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
       }
+      if (e.images && e.images.length) {
+        html += '<div class="etape-photos">' + e.images.map(function (img) {
+          return '<figure><img src="' + esc(img.src) + '" alt="' + esc(img.alt) + '" loading="lazy" />' +
+            '<figcaption>' + esc(img.alt) + '</figcaption></figure>';
+        }).join('') + '</div>';
+      }
       html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
       if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
       if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';

@@ -172,6 +172,19 @@ button.ghost { background: var(--card2); color: var(--text); border: 1px solid v
 .etape-body ul { margin: 6px 0; padding-left: 18px; }
 .etape-body li { margin-bottom: 5px; font-size: 13.5px; }
 .outils { font-size: 12px; color: var(--muted); margin: 6px 0; }
+.etape-photos { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.etape-photos figure { margin: 0; flex: 1 1 160px; max-width: 260px; }
+.etape-photos img {
+  display: block; width: 100%; height: auto; border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.etape-photos figcaption { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.photo-ref { margin: 10px 0; }
+.photo-ref img {
+  display: block; width: 100%; max-width: 340px; height: auto; border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.photo-ref figcaption { font-size: 11px; color: var(--muted); margin-top: 4px; }
 .encart { border-radius: 10px; padding: 8px 10px; font-size: 12.5px; margin-top: 8px; }
 .encart.attention { background: #2a1a17; border: 1px solid #6b3030; }
 .encart.astuce { background: #14251d; border: 1px solid #2c5f45; }

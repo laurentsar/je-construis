@@ -26,6 +26,10 @@
           'Câble Ethernet (RJ45), à brancher entre la passerelle et la box/routeur dès la mise sous tension.',
           'Un PC sous Ubuntu (ou toute distribution Linux), connecté au même réseau.'
         ],
+        images: [
+          { src: 'img/zigbee/gateways.jpg', alt: 'Les deux passerelles compatibles : SGWZ 1 B2 (USB-C, à gauche) et SGWZ 1 A1/A2 (micro-USB, à droite)' },
+          { src: 'img/zigbee/adaptateur.jpg', alt: 'Adaptateur USB vers série 6-en-1 (CP2102), sélecteur de mode à mettre sur TTL' }
+        ],
         attention: 'Un adaptateur 5V ou le branchement du fil 3V3 peut endommager définitivement la carte.'
       },
       {
@@ -38,6 +42,9 @@
           'Souder un fil uniquement sur TP17 (GND), TP18 (TX) et TP19 (RX).',
           'Câblage croisé vers l\'adaptateur : TP17 (GND) → USBGND, TP18 (TX) → RXD, TP19 (RX) → TXD. La broche 3V3 de l\'adaptateur reste non connectée.',
           'Paramètres console à retenir pour la suite : 38400 baud, 8N1, sans contrôle de flux.'
+        ],
+        images: [
+          { src: 'img/zigbee/connecteur-macro.jpg', alt: 'Gros plan sur le connecteur de flash : RX / TX / GND / 3V3 sérigraphiés au-dessus des pastilles TP19/TP18/TP17/TP16' }
         ],
         attention: 'Ne jamais souder ni connecter TP16 (3V3) : la passerelle est déjà alimentée par son propre bloc secteur/USB, et brancher ce fil peut créer un conflit d\'alimentation ou griller la carte. Attention aussi au croisement TX ↔ RX, classique sur ce type de connexion série.'
       },

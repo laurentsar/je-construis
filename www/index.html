@@ -391,6 +391,10 @@
 
         <p class="hint" style="margin-top:12px"><strong>Passerelles compatibles</strong></p>
         <p class="hint">SGWZ 1 A1/A2 (1ère génération, alimentation micro-USB) et SGWZ 1 B2 (2ème génération, alimentation USB-C). Le connecteur de flash (pastilles TP19/TP18/TP17/TP16, juste à côté du port RJ45 au dos de la carte) est identique sur les deux révisions rencontrées (v2.0.1 et v1.0.2.7).</p>
+        <figure class="photo-ref">
+          <img src="img/zigbee/carte-dessous.jpg" alt="Vue de dessous des deux cartes, montrant le port RJ45 et, juste au-dessus, la zone du connecteur de flash" loading="lazy" />
+          <figcaption>Vue de dessous des deux cartes rencontrées : le port RJ45 sert de repère, le connecteur de flash est juste au-dessus.</figcaption>
+        </figure>
 
         <p class="hint" style="margin-top:12px"><strong>Adaptateur USB-série</strong></p>
         <p class="hint">3.3V TTL obligatoire — jamais 5V. Modèle utilisé pour cette procédure : adaptateur 6-en-1 (CP2102) TTL/RS485/RS232 avec sélecteur DIP, à laisser impérativement sur TTL. Seules les broches TXD, RXD et USBGND sont utilisées ; la sortie 3V3 de l'adaptateur reste non connectée.</p>
@@ -436,7 +440,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.8';
+    window.APP_VERSION = '1.9';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
