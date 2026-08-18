@@ -525,21 +525,6 @@
     appliquerProjetActif();
   }
 
-  // Le routeur solaire n'a d'intérêt que si le carport produit du solaire :
-  // sa carte d'accueil et son entrée dans « Mes projets » restent masquées
-  // tant que l'option Panneaux solaires n'est pas cochée sur le carport.
-  function routeurConcerne() {
-    return !!P.solaire;
-  }
-
-  function appliquerVisibiliteRouteur() {
-    var concerne = routeurConcerne();
-    var home = $('homeRouteur');
-    var hint = $('routeurCache');
-    if (home) home.style.display = concerne ? '' : 'none';
-    if (hint) hint.style.display = concerne ? 'none' : '';
-  }
-
   function rendrePied() {
     var pied = Calc.PIEDS_POTEAU[P.piedPoteau];
     $('piedDetail').innerHTML =
@@ -588,22 +573,18 @@
     fla.appendChild(flaOpen);
     box.appendChild(fla);
 
-    // Le routeur solaire ne s'épingle que si le carport a des panneaux
-    // solaires activés : sans production solaire, il n'y a pas de surplus à
-    // router, donc pas d'intérêt à proposer ce projet.
-    if (routeurConcerne()) {
-      var rou = el('div', 'projet');
-      rou.innerHTML = '<div style="flex:1"><div class="p-nom">🔆 Routeur solaire</div>' +
-        '<div class="p-sub">Route le surplus PV vers une charge · guide pas à pas</div></div>';
-      var rouOpen = el('button', null, '📂');
-      rouOpen.title = 'Ouvrir le guide de montage';
-      rouOpen.addEventListener('click', function () {
-        choisirProjet('routeur');
-        montrerOnglet('projet');
-      });
-      rou.appendChild(rouOpen);
-      box.appendChild(rou);
-    }
+    // Idem pour le routeur solaire, épinglé après la passerelle Zigbee.
+    var rou = el('div', 'projet');
+    rou.innerHTML = '<div style="flex:1"><div class="p-nom">🔆 Routeur solaire</div>' +
+      '<div class="p-sub">Route le surplus PV vers une charge · guide pas à pas</div></div>';
+    var rouOpen = el('button', null, '📂');
+    rouOpen.title = 'Ouvrir le guide de montage';
+    rouOpen.addEventListener('click', function () {
+      choisirProjet('routeur');
+      montrerOnglet('projet');
+    });
+    rou.appendChild(rouOpen);
+    box.appendChild(rou);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -653,8 +634,6 @@
     rendrePlans();
     rendreEtapesActif();
     rendrePied();
-    appliquerVisibiliteRouteur();
-    rendreProjets();
     sauver(K_COURANT, P);
     if (!silencieux && R.alertes.length) {
       // Rien de bloquant : l'onglet Matériaux affiche le détail.
