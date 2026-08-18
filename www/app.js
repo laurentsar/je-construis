@@ -470,10 +470,11 @@
     return window.RouteurSteps && typeof window.RouteurSteps.construire === 'function';
   }
 
-  // Bascule les six onglets partagés (Projet/Matériaux/Débit/Plans/Étapes/
-  // Infos) sur le contenu du projet actif : chaque onglet garde son rôle,
-  // mais seul le carport a des cotes, un débit et des plans — les trois
-  // autres projets n'y montrent qu'un texte de présentation adapté.
+  // Bascule les onglets partagés sur le contenu du projet actif : Projet/
+  // Matériaux/Étapes/Infos gardent leur rôle avec un contenu adapté, tandis
+  // que Débit et Plans — qui n'ont de sens que pour le carport (bois à
+  // débiter, cotes à dessiner) — sont carrément masqués de la barre pour
+  // les trois autres projets, au lieu d'afficher un message à vide.
   function appliquerProjetActif() {
     var c = projetActif === 'carport';
     var g = projetActif === 'gemma';
@@ -490,24 +491,8 @@
     $('materiauxFlashBody').style.display = f ? '' : 'none';
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
 
-    $('debitCarportBody').style.display = c ? '' : 'none';
-    $('debitNonApplicable').style.display = c ? 'none' : '';
-    $('plansCarportBody').style.display = c ? '' : 'none';
-    $('plansNonApplicable').style.display = c ? 'none' : '';
-    if (!c) {
-      var texteDebit = g
-        ? 'Le Traducteur Gemma n\'a pas de débit de coupe : ce n\'est pas un ouvrage en bois, mais un appareil électronique à assembler.'
-        : f
-        ? 'La passerelle Zigbee n\'a pas de débit de coupe : il n\'y a pas de bois à débiter, seulement un appareil à flasher.'
-        : 'Le routeur solaire n\'a pas de débit de coupe : c\'est un boîtier électronique à câbler, pas un ouvrage en bois.';
-      var textePlans = g
-        ? 'Le Traducteur Gemma n\'a pas de plans cotés : les fichiers du boîtier (STL) sont fournis directement par le dépôt gemma-translator.'
-        : f
-        ? 'La passerelle Zigbee n\'a pas de plans cotés : c\'est un flash logiciel sur du matériel existant, pas une structure à dimensionner.'
-        : 'Le routeur solaire n\'a pas de plans cotés : la carte et son boîtier DIN sont fournis tout faits par l\'association APPER.';
-      $('debitNonApplicableTexte').textContent = texteDebit;
-      $('plansNonApplicableTexte').textContent = textePlans;
-    }
+    $('tabDebit').style.display = c ? '' : 'none';
+    $('tabPlans').style.display = c ? '' : 'none';
 
     $('etapesTitre').textContent = c ? 'Marche à suivre' : g ? 'Marche à suivre du montage' : f ? 'Marche à suivre du flash' : 'Marche à suivre du montage';
 

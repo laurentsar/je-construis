@@ -25,8 +25,8 @@
     <button class="tab active" data-tab="accueil">🏠 Accueil</button>
     <button class="tab" data-tab="projet">📐 Projet</button>
     <button class="tab" data-tab="materiaux">📋 Matériaux</button>
-    <button class="tab" data-tab="debit">✂️ Débit</button>
-    <button class="tab" data-tab="plans">📏 Plans</button>
+    <button class="tab" data-tab="debit" id="tabDebit">✂️ Débit</button>
+    <button class="tab" data-tab="plans" id="tabPlans">📏 Plans</button>
     <button class="tab" data-tab="etapes">🔨 Étapes</button>
     <button class="tab" data-tab="infos">ℹ️ Infos</button>
   </nav>
@@ -366,27 +366,19 @@
 
     <!-- ================= DÉBIT ================= -->
     <section class="panel" id="tab-debit">
-      <div id="debitCarportBody" class="card">
+      <div class="card">
         <h2>Débit de coupe</h2>
         <p class="hint">Comment sortir toutes les pièces des barres du commerce (3, 4, 5 et 6 m), avec 3 mm de trait de scie par coupe. Le calcul range d'abord les pièces les plus longues : c'est ce qui limite les chutes.</p>
         <div id="debit"></div>
-      </div>
-      <div id="debitNonApplicable" class="card" style="display:none">
-        <h2>Débit de coupe</h2>
-        <p class="hint" id="debitNonApplicableTexte"></p>
       </div>
     </section>
 
     <!-- ================= PLANS ================= -->
     <section class="panel" id="tab-plans">
-      <div id="plansCarportBody" class="card">
+      <div class="card">
         <h2>Plans cotés</h2>
         <p class="hint">Dessinés à partir de tes cotes : change une dimension, les plans suivent.</p>
         <div id="plans"></div>
-      </div>
-      <div id="plansNonApplicable" class="card" style="display:none">
-        <h2>Plans cotés</h2>
-        <p class="hint" id="plansNonApplicableTexte"></p>
       </div>
     </section>
 
@@ -510,7 +502,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.12';
+    window.APP_VERSION = '1.13';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
