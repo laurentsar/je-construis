@@ -474,6 +474,59 @@
     return window.GemmaSteps && typeof window.GemmaSteps.construire === 'function';
   }
 
+  // Troisième projet : la passerelle Zigbee Lidl Silvercrest. Même principe
+  // que le Traducteur Gemma — étapes fixes, jeu de cases à part.
+  function rendreEtapesFlash() {
+    if (!global_FlashSteps()) return;
+    var etapes = window.FlashSteps.construire();
+    var fait = coches['__flash__'] || {};
+    var box = $('etapesFlash');
+    box.innerHTML = '';
+
+    etapes.forEach(function (e, i) {
+      var done = !!fait[e.id];
+      var card = el('div', 'etape' + (done ? ' done' : ''));
+
+      var head = el('div', 'etape-head');
+      head.innerHTML = '<div class="etape-num">' + (done ? '✓' : (i + 1)) + '</div>' +
+        '<div class="etape-titre">' + esc(e.titre) + '<div class="etape-duree">⏱ ' + esc(e.duree) + '</div></div>' +
+        '<div style="font-size:18px">' + (done ? '☑' : '☐') + '</div>';
+      head.addEventListener('click', function (ev) {
+        if (ev.target === head.lastElementChild) {
+          fait[e.id] = !fait[e.id];
+          coches['__flash__'] = fait;
+          sauver(K_COCHES, coches);
+          rendreEtapesFlash();
+        } else {
+          card.classList.toggle('open');
+        }
+      });
+
+      var body = el('div', 'etape-body');
+      var html = '';
+      if (e.outils && e.outils.length) {
+        html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
+      }
+      html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
+      if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
+      if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
+      body.innerHTML = html;
+
+      card.appendChild(head);
+      card.appendChild(body);
+      box.appendChild(card);
+    });
+
+    var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
+    $('progressBarFlash').style.width = (nb / etapes.length * 100) + '%';
+    $('progressTextFlash').textContent = nb + ' étape(s) sur ' + etapes.length +
+      (nb === etapes.length ? ' — passerelle flashée, bravo !' : ' — coche au fur et à mesure du flash.');
+  }
+
+  function global_FlashSteps() {
+    return window.FlashSteps && typeof window.FlashSteps.construire === 'function';
+  }
+
   function rendrePied() {
     var pied = Calc.PIEDS_POTEAU[P.piedPoteau];
     $('piedDetail').innerHTML =
@@ -507,6 +560,20 @@
     });
     gem.appendChild(gemOpen);
     box.appendChild(gem);
+
+    // Idem pour la passerelle Zigbee : ce n'est pas un carport non plus, on
+    // l'épingle juste après le Traducteur Gemma.
+    var fla = el('div', 'projet');
+    fla.innerHTML = '<div style="flex:1"><div class="p-nom">📡 Passerelle Zigbee</div>' +
+      '<div class="p-sub">Flash firmware open source · guide pas à pas</div></div>';
+    var flaOpen = el('button', null, '📂');
+    flaOpen.title = 'Ouvrir le guide de flash';
+    flaOpen.addEventListener('click', function () {
+      rendreEtapesFlash();
+      montrerOnglet('flash');
+    });
+    fla.appendChild(flaOpen);
+    box.appendChild(fla);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -642,7 +709,17 @@
       montrerOnglet('gemma');
     });
 
+    $('homeFlash').addEventListener('click', function () {
+      rendreEtapesFlash();
+      montrerOnglet('flash');
+    });
+
     $('btnRetourProjets').addEventListener('click', function () {
+      montrerOnglet('infos');
+      rendreProjets();
+    });
+
+    $('btnRetourProjetsFlash').addEventListener('click', function () {
       montrerOnglet('infos');
       rendreProjets();
     });
@@ -664,6 +741,7 @@
 
     recalculer();
     rendreEtapesGemma();
+    rendreEtapesFlash();
     rendreProjets();
 
     if (window.AutoBackup && AutoBackup.mount) {
