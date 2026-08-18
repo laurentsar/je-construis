@@ -470,10 +470,11 @@
     return window.RouteurSteps && typeof window.RouteurSteps.construire === 'function';
   }
 
-  // Bascule les six onglets partagés (Projet/Matériaux/Débit/Plans/Étapes/
-  // Infos) sur le contenu du projet actif : chaque onglet garde son rôle,
-  // mais seul le carport a des cotes, un débit et des plans — les trois
-  // autres projets n'y montrent qu'un texte de présentation adapté.
+  // Bascule les onglets partagés sur le contenu du projet actif : Projet/
+  // Matériaux/Étapes/Infos gardent leur rôle avec un contenu adapté, tandis
+  // que Débit et Plans — qui n'ont de sens que pour le carport (bois à
+  // débiter, cotes à dessiner) — sont carrément masqués de la barre pour
+  // les trois autres projets, au lieu d'afficher un message à vide.
   function appliquerProjetActif() {
     var c = projetActif === 'carport';
     var g = projetActif === 'gemma';
@@ -490,24 +491,8 @@
     $('materiauxFlashBody').style.display = f ? '' : 'none';
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
 
-    $('debitCarportBody').style.display = c ? '' : 'none';
-    $('debitNonApplicable').style.display = c ? 'none' : '';
-    $('plansCarportBody').style.display = c ? '' : 'none';
-    $('plansNonApplicable').style.display = c ? 'none' : '';
-    if (!c) {
-      var texteDebit = g
-        ? 'Le Traducteur Gemma n\'a pas de débit de coupe : ce n\'est pas un ouvrage en bois, mais un appareil électronique à assembler.'
-        : f
-        ? 'La passerelle Zigbee n\'a pas de débit de coupe : il n\'y a pas de bois à débiter, seulement un appareil à flasher.'
-        : 'Le routeur solaire n\'a pas de débit de coupe : c\'est un boîtier électronique à câbler, pas un ouvrage en bois.';
-      var textePlans = g
-        ? 'Le Traducteur Gemma n\'a pas de plans cotés : les fichiers du boîtier (STL) sont fournis directement par le dépôt gemma-translator.'
-        : f
-        ? 'La passerelle Zigbee n\'a pas de plans cotés : c\'est un flash logiciel sur du matériel existant, pas une structure à dimensionner.'
-        : 'Le routeur solaire n\'a pas de plans cotés : la carte et son boîtier DIN sont fournis tout faits par l\'association APPER.';
-      $('debitNonApplicableTexte').textContent = texteDebit;
-      $('plansNonApplicableTexte').textContent = textePlans;
-    }
+    $('tabDebit').style.display = c ? '' : 'none';
+    $('tabPlans').style.display = c ? '' : 'none';
 
     $('etapesTitre').textContent = c ? 'Marche à suivre' : g ? 'Marche à suivre du montage' : f ? 'Marche à suivre du flash' : 'Marche à suivre du montage';
 
@@ -523,21 +508,6 @@
     projetActif = nom;
     sauver(K_ACTIF, nom);
     appliquerProjetActif();
-  }
-
-  // Le routeur solaire n'a d'intérêt que si le carport produit du solaire :
-  // sa carte d'accueil et son entrée dans « Mes projets » restent masquées
-  // tant que l'option Panneaux solaires n'est pas cochée sur le carport.
-  function routeurConcerne() {
-    return !!P.solaire;
-  }
-
-  function appliquerVisibiliteRouteur() {
-    var concerne = routeurConcerne();
-    var home = $('homeRouteur');
-    var hint = $('routeurCache');
-    if (home) home.style.display = concerne ? '' : 'none';
-    if (hint) hint.style.display = concerne ? 'none' : '';
   }
 
   function rendrePied() {
@@ -588,22 +558,18 @@
     fla.appendChild(flaOpen);
     box.appendChild(fla);
 
-    // Le routeur solaire ne s'épingle que si le carport a des panneaux
-    // solaires activés : sans production solaire, il n'y a pas de surplus à
-    // router, donc pas d'intérêt à proposer ce projet.
-    if (routeurConcerne()) {
-      var rou = el('div', 'projet');
-      rou.innerHTML = '<div style="flex:1"><div class="p-nom">🔆 Routeur solaire</div>' +
-        '<div class="p-sub">Route le surplus PV vers une charge · guide pas à pas</div></div>';
-      var rouOpen = el('button', null, '📂');
-      rouOpen.title = 'Ouvrir le guide de montage';
-      rouOpen.addEventListener('click', function () {
-        choisirProjet('routeur');
-        montrerOnglet('projet');
-      });
-      rou.appendChild(rouOpen);
-      box.appendChild(rou);
-    }
+    // Idem pour le routeur solaire, épinglé après la passerelle Zigbee.
+    var rou = el('div', 'projet');
+    rou.innerHTML = '<div style="flex:1"><div class="p-nom">🔆 Routeur solaire</div>' +
+      '<div class="p-sub">Route le surplus PV vers une charge · guide pas à pas</div></div>';
+    var rouOpen = el('button', null, '📂');
+    rouOpen.title = 'Ouvrir le guide de montage';
+    rouOpen.addEventListener('click', function () {
+      choisirProjet('routeur');
+      montrerOnglet('projet');
+    });
+    rou.appendChild(rouOpen);
+    box.appendChild(rou);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -653,8 +619,6 @@
     rendrePlans();
     rendreEtapesActif();
     rendrePied();
-    appliquerVisibiliteRouteur();
-    rendreProjets();
     sauver(K_COURANT, P);
     if (!silencieux && R.alertes.length) {
       // Rien de bloquant : l'onglet Matériaux affiche le détail.
