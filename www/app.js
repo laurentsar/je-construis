@@ -18,6 +18,7 @@
   var K_PROJETS = 'jc:projets';
   var K_PRIX = 'jc:prix';
   var K_COCHES = 'jc:coches';
+  var K_ACTIF = 'jc:actif';
 
   var DEFAUT = {
     nom: 'Mon carport',
@@ -48,6 +49,9 @@
   P.prix = charger(K_PRIX) || P.prix || {};
   var R = null;                 // dernier résultat de calcul
   var coches = charger(K_COCHES) || {};
+  // Projet actif : quel guide les six onglets affichent en ce moment.
+  // 'carport' (formulaire + calculs), 'gemma' ou 'flash' (guides fixes).
+  var projetActif = charger(K_ACTIF) || 'carport';
 
   // ------------------------------------------------------------------ outils
   function $(id) { return document.getElementById(id); }
@@ -371,9 +375,31 @@
     $('plans').innerHTML = Plans.toutes(R).join('');
   }
 
-  function rendreEtapes() {
-    var etapes = Steps.construire(R);
-    var cle = P.nom || 'projet';
+  // Les trois projets partagent le même onglet Étapes : seule la source des
+  // étapes change selon le projet actif (calculée depuis R pour le carport,
+  // fixe pour Gemma et la passerelle Zigbee), chacune avec ses cases cochées
+  // gardées sous une clé dédiée.
+  function rendreEtapesActif() {
+    var etapes, cle, finMsg, enCoursMsg;
+    if (projetActif === 'gemma') {
+      if (!global_GemmaSteps()) return;
+      etapes = window.GemmaSteps.construire();
+      cle = '__gemma__';
+      finMsg = ' — appareil monté, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du montage.';
+    } else if (projetActif === 'flash') {
+      if (!global_FlashSteps()) return;
+      etapes = window.FlashSteps.construire();
+      cle = '__flash__';
+      finMsg = ' — passerelle flashée, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du flash.';
+    } else {
+      etapes = Steps.construire(R);
+      cle = P.nom || 'projet';
+      finMsg = ' — terminé, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du chantier.';
+    }
+
     var fait = coches[cle] || {};
     var box = $('etapes');
     box.innerHTML = '';
@@ -393,7 +419,7 @@
           fait[e.id] = !fait[e.id];
           coches[cle] = fait;
           sauver(K_COCHES, coches);
-          rendreEtapes();
+          rendreEtapesActif();
         } else {
           card.classList.toggle('open');
         }
@@ -417,114 +443,61 @@
     var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
     $('progressBar').style.width = (nb / etapes.length * 100) + '%';
     $('progressText').textContent = nb + ' étape(s) sur ' + etapes.length +
-      (nb === etapes.length ? ' — terminé, bravo !' : ' — coche au fur et à mesure du chantier.');
-  }
-
-  // Le Traducteur Gemma est un second projet : mêmes cartes cochables que la
-  // marche à suivre du carport, mais des étapes fixes (elles ne dépendent
-  // d'aucune cote) et un jeu de cases à part, gardé sous une clé dédiée.
-  function rendreEtapesGemma() {
-    if (!global_GemmaSteps()) return;
-    var etapes = window.GemmaSteps.construire();
-    var fait = coches['__gemma__'] || {};
-    var box = $('etapesGemma');
-    box.innerHTML = '';
-
-    etapes.forEach(function (e, i) {
-      var done = !!fait[e.id];
-      var card = el('div', 'etape' + (done ? ' done' : ''));
-
-      var head = el('div', 'etape-head');
-      head.innerHTML = '<div class="etape-num">' + (done ? '✓' : (i + 1)) + '</div>' +
-        '<div class="etape-titre">' + esc(e.titre) + '<div class="etape-duree">⏱ ' + esc(e.duree) + '</div></div>' +
-        '<div style="font-size:18px">' + (done ? '☑' : '☐') + '</div>';
-      head.addEventListener('click', function (ev) {
-        if (ev.target === head.lastElementChild) {
-          fait[e.id] = !fait[e.id];
-          coches['__gemma__'] = fait;
-          sauver(K_COCHES, coches);
-          rendreEtapesGemma();
-        } else {
-          card.classList.toggle('open');
-        }
-      });
-
-      var body = el('div', 'etape-body');
-      var html = '';
-      if (e.outils && e.outils.length) {
-        html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
-      }
-      html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
-      if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
-      if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
-      body.innerHTML = html;
-
-      card.appendChild(head);
-      card.appendChild(body);
-      box.appendChild(card);
-    });
-
-    var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
-    $('progressBarGemma').style.width = (nb / etapes.length * 100) + '%';
-    $('progressTextGemma').textContent = nb + ' étape(s) sur ' + etapes.length +
-      (nb === etapes.length ? ' — appareil monté, bravo !' : ' — coche au fur et à mesure du montage.');
+      (nb === etapes.length ? finMsg : enCoursMsg);
   }
 
   function global_GemmaSteps() {
     return window.GemmaSteps && typeof window.GemmaSteps.construire === 'function';
   }
 
-  // Troisième projet : la passerelle Zigbee Lidl Silvercrest. Même principe
-  // que le Traducteur Gemma — étapes fixes, jeu de cases à part.
-  function rendreEtapesFlash() {
-    if (!global_FlashSteps()) return;
-    var etapes = window.FlashSteps.construire();
-    var fait = coches['__flash__'] || {};
-    var box = $('etapesFlash');
-    box.innerHTML = '';
-
-    etapes.forEach(function (e, i) {
-      var done = !!fait[e.id];
-      var card = el('div', 'etape' + (done ? ' done' : ''));
-
-      var head = el('div', 'etape-head');
-      head.innerHTML = '<div class="etape-num">' + (done ? '✓' : (i + 1)) + '</div>' +
-        '<div class="etape-titre">' + esc(e.titre) + '<div class="etape-duree">⏱ ' + esc(e.duree) + '</div></div>' +
-        '<div style="font-size:18px">' + (done ? '☑' : '☐') + '</div>';
-      head.addEventListener('click', function (ev) {
-        if (ev.target === head.lastElementChild) {
-          fait[e.id] = !fait[e.id];
-          coches['__flash__'] = fait;
-          sauver(K_COCHES, coches);
-          rendreEtapesFlash();
-        } else {
-          card.classList.toggle('open');
-        }
-      });
-
-      var body = el('div', 'etape-body');
-      var html = '';
-      if (e.outils && e.outils.length) {
-        html += '<div class="outils">🧰 ' + e.outils.map(esc).join(' · ') + '</div>';
-      }
-      html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
-      if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
-      if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
-      body.innerHTML = html;
-
-      card.appendChild(head);
-      card.appendChild(body);
-      box.appendChild(card);
-    });
-
-    var nb = etapes.filter(function (e) { return fait[e.id]; }).length;
-    $('progressBarFlash').style.width = (nb / etapes.length * 100) + '%';
-    $('progressTextFlash').textContent = nb + ' étape(s) sur ' + etapes.length +
-      (nb === etapes.length ? ' — passerelle flashée, bravo !' : ' — coche au fur et à mesure du flash.');
-  }
-
   function global_FlashSteps() {
     return window.FlashSteps && typeof window.FlashSteps.construire === 'function';
+  }
+
+  // Bascule les six onglets partagés (Projet/Matériaux/Débit/Plans/Étapes/
+  // Infos) sur le contenu du projet actif : chaque onglet garde son rôle,
+  // mais le carport, le Traducteur Gemma et la passerelle Zigbee n'y montrent
+  // pas la même chose (le carport seul a des cotes, un débit et des plans).
+  function appliquerProjetActif() {
+    var c = projetActif === 'carport';
+    var g = projetActif === 'gemma';
+
+    $('projetCarportBody').style.display = c ? '' : 'none';
+    $('projetGemmaBody').style.display = g ? '' : 'none';
+    $('projetFlashBody').style.display = (!c && !g) ? '' : 'none';
+
+    $('materiauxCarportBody').style.display = c ? '' : 'none';
+    $('materiauxGemmaBody').style.display = g ? '' : 'none';
+    $('materiauxFlashBody').style.display = (!c && !g) ? '' : 'none';
+
+    $('debitCarportBody').style.display = c ? '' : 'none';
+    $('debitNonApplicable').style.display = c ? 'none' : '';
+    $('plansCarportBody').style.display = c ? '' : 'none';
+    $('plansNonApplicable').style.display = c ? 'none' : '';
+    if (!c) {
+      var texteDebit = g
+        ? 'Le Traducteur Gemma n\'a pas de débit de coupe : ce n\'est pas un ouvrage en bois, mais un appareil électronique à assembler.'
+        : 'La passerelle Zigbee n\'a pas de débit de coupe : il n\'y a pas de bois à débiter, seulement un appareil à flasher.';
+      var textePlans = g
+        ? 'Le Traducteur Gemma n\'a pas de plans cotés : les fichiers du boîtier (STL) sont fournis directement par le dépôt gemma-translator.'
+        : 'La passerelle Zigbee n\'a pas de plans cotés : c\'est un flash logiciel sur du matériel existant, pas une structure à dimensionner.';
+      $('debitNonApplicableTexte').textContent = texteDebit;
+      $('plansNonApplicableTexte').textContent = textePlans;
+    }
+
+    $('etapesTitre').textContent = c ? 'Marche à suivre' : (g ? 'Marche à suivre du montage' : 'Marche à suivre du flash');
+
+    $('infosCarportBody').style.display = c ? '' : 'none';
+    $('infosGemmaBody').style.display = g ? '' : 'none';
+    $('infosFlashBody').style.display = (!c && !g) ? '' : 'none';
+
+    rendreEtapesActif();
+  }
+
+  function choisirProjet(nom) {
+    projetActif = nom;
+    sauver(K_ACTIF, nom);
+    appliquerProjetActif();
   }
 
   function rendrePied() {
@@ -555,8 +528,8 @@
     var gemOpen = el('button', null, '📂');
     gemOpen.title = 'Ouvrir le guide de montage';
     gemOpen.addEventListener('click', function () {
-      rendreEtapesGemma();
-      montrerOnglet('gemma');
+      choisirProjet('gemma');
+      montrerOnglet('projet');
     });
     gem.appendChild(gemOpen);
     box.appendChild(gem);
@@ -569,8 +542,8 @@
     var flaOpen = el('button', null, '📂');
     flaOpen.title = 'Ouvrir le guide de flash';
     flaOpen.addEventListener('click', function () {
-      rendreEtapesFlash();
-      montrerOnglet('flash');
+      choisirProjet('flash');
+      montrerOnglet('projet');
     });
     fla.appendChild(flaOpen);
     box.appendChild(fla);
@@ -590,6 +563,7 @@
       open.addEventListener('click', function () {
         P = Object.assign({}, DEFAUT, pr);
         etatVersForm();
+        choisirProjet('carport');
         recalculer();
         montrerOnglet('projet');
         toast('Projet « ' + pr.nom + ' » chargé.');
@@ -620,7 +594,7 @@
     rendreDevis();
     rendreDebit();
     rendrePlans();
-    rendreEtapes();
+    rendreEtapesActif();
     rendrePied();
     sauver(K_COURANT, P);
     if (!silencieux && R.alertes.length) {
@@ -691,6 +665,7 @@
       P = Object.assign({}, DEFAUT, { prix: P.prix });
       P.nom = 'Carport ' + new Date().toLocaleDateString('fr-FR');
       etatVersForm();
+      choisirProjet('carport');
       recalculer();
       toast('Nouveau projet.');
     });
@@ -701,27 +676,18 @@
     });
 
     $('homeCarport').addEventListener('click', function () {
+      choisirProjet('carport');
       montrerOnglet('projet');
     });
 
     $('homeGemma').addEventListener('click', function () {
-      rendreEtapesGemma();
-      montrerOnglet('gemma');
+      choisirProjet('gemma');
+      montrerOnglet('projet');
     });
 
     $('homeFlash').addEventListener('click', function () {
-      rendreEtapesFlash();
-      montrerOnglet('flash');
-    });
-
-    $('btnRetourProjets').addEventListener('click', function () {
-      montrerOnglet('infos');
-      rendreProjets();
-    });
-
-    $('btnRetourProjetsFlash').addEventListener('click', function () {
-      montrerOnglet('infos');
-      rendreProjets();
+      choisirProjet('flash');
+      montrerOnglet('projet');
     });
 
     $('btnCopyMat').addEventListener('click', function () {
@@ -740,8 +706,7 @@
     $('verText').textContent = window.APP_VERSION || '';
 
     recalculer();
-    rendreEtapesGemma();
-    rendreEtapesFlash();
+    appliquerProjetActif();
     rendreProjets();
 
     if (window.AutoBackup && AutoBackup.mount) {
