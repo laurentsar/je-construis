@@ -15,7 +15,7 @@
       <img class="brand-logo" src="img/icon-192.png" alt="" />
       <div>
         <h1>Je Construis <span id="verChip" class="ver-chip"></span></h1>
-        <p class="sub">2 projets à construire soi-même, pas à pas</p>
+        <p class="sub">3 projets à construire soi-même, pas à pas</p>
       </div>
     </div>
     <button id="btnProjets" class="icon-btn" title="Mes projets">📂</button>
@@ -36,7 +36,7 @@
     <section class="panel active" id="tab-accueil">
       <div class="card">
         <h2>Mes projets</h2>
-        <p class="hint">Deux projets à construire soi-même, pas à pas.</p>
+        <p class="hint">Trois projets à construire soi-même, pas à pas.</p>
         <div class="projets-home">
           <button type="button" class="projet-home" id="homeCarport">
             <span class="ph-ico">🏗️</span>
@@ -51,6 +51,14 @@
             <span class="ph-txt">
               <span class="ph-nom">Traducteur Gemma</span>
               <span class="ph-sub">Traducteur vocal hors ligne · guide de montage</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
+          <button type="button" class="projet-home" id="homeFlash">
+            <span class="ph-ico">📡</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Passerelle Zigbee</span>
+              <span class="ph-sub">Flash firmware open source (Lidl Silvercrest) · guide pas à pas</span>
             </span>
             <span class="ph-fleche">›</span>
           </button>
@@ -330,6 +338,47 @@
       </div>
     </section>
 
+    <!-- ================= PASSERELLE ZIGBEE ================= -->
+    <section class="panel" id="tab-flash">
+      <div class="card">
+        <button id="btnRetourProjetsFlash" class="ghost" style="margin-bottom:10px">← Mes projets</button>
+        <h2>📡 Flasher la passerelle Zigbee Lidl Silvercrest</h2>
+        <p class="hint">Un troisième projet à construire, sur le même principe que le carport et le Traducteur Gemma : ici, on remplace le firmware d'origine d'une passerelle Zigbee Lidl Silvercrest par un firmware <strong>open source compatible Home Assistant</strong>, à partir du projet <em>hacking-lidl-silvercrest-gateway</em>. La procédure part d'un PC sous Ubuntu et couvre le câblage, le flash du système et de la radio Zigbee/Thread.</p>
+        <div id="progressFlash" class="progress"><div id="progressBarFlash"></div></div>
+        <p class="hint" id="progressTextFlash"></p>
+      </div>
+      <div id="etapesFlash"></div>
+      <div class="card">
+        <h2>À savoir</h2>
+        <p class="hint">C'est un guide de flash matériel : une fois flashée, la passerelle tourne seule sur le réseau, indépendamment de cette application.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Passerelles compatibles</strong></p>
+        <p class="hint">SGWZ 1 A1/A2 (1ère génération, alimentation micro-USB) et SGWZ 1 B2 (2ème génération, alimentation USB-C). Le connecteur de flash (pastilles TP19/TP18/TP17/TP16, juste à côté du port RJ45 au dos de la carte) est identique sur les deux révisions rencontrées (v2.0.1 et v1.0.2.7).</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Adaptateur USB-série</strong></p>
+        <p class="hint">3.3V TTL obligatoire — jamais 5V. Modèle utilisé pour cette procédure : adaptateur 6-en-1 (CP2102) TTL/RS485/RS232 avec sélecteur DIP, à laisser impérativement sur TTL. Seules les broches TXD, RXD et USBGND sont utilisées ; la sortie 3V3 de l'adaptateur reste non connectée.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Problèmes rencontrés et solutions</strong></p>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <tbody>
+              <tr><td><strong>« commande introuvable » (nandwrite/flash_erase)</strong><div class="note">Le paquet mtd-utils manque</div></td><td>sudo apt install -y mtd-utils</td></tr>
+              <tr><td><strong>« dmesg: échec de lecture du tampon de noyau »</strong><div class="note">Lecture restreinte par défaut sur Ubuntu récent</div></td><td>Utiliser sudo dmesg | tail -20</td></tr>
+              <tr><td><strong>Texte illisible/corrompu dans la console série</strong><div class="note">Mauvais baudrate, faux contact (souvent GND), adaptateur de mauvaise qualité</div></td><td>Vérifier 38400 8N1, revoir la soudure GND, tester un autre adaptateur</td></tr>
+              <tr><td><strong>« Unknown command » dans le bootloader RealTek</strong><div class="note">Commande collée trop vite, liaison instable</div></td><td>Retaper à la main, caractère par caractère ; tester avec ?</td></tr>
+              <tr><td><strong>« Bootloader does not answer ICMP (Tuya / pre-v2) »</strong><div class="note">Bootloader Tuya d'origine</div></td><td>Flash manuel FLW 0 80500000 01000000 sur la console série</td></tr>
+              <tr><td><strong>« Error: BAUD must be a positive integer »</strong><div class="note">IP passée en argument positionnel au lieu du flag -g</div></td><td>./flash_efr32.sh -y -g &lt;IP&gt; ncp</td></tr>
+              <tr><td><strong>« virtual environment was not created successfully »</strong><div class="note">Le paquet python3-venv manque</div></td><td>sudo apt install python3-venv (ou python3.12-venv), supprimer silabs-flasher et relancer</td></tr>
+              <tr><td><strong>« Failed to read firmware metadata: KeyError(...) »</strong><div class="note">Métadonnées optionnelles absentes du .gbl</div></td><td>Non bloquant, le flash continue normalement</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin-top:12px">Projet indépendant, maintenu par la communauté : à jour au moment de la rédaction de cette procédure, mais vérifier le dépôt en cas de changement de comportement des scripts.</p>
+        <p class="hint">Code source : github.com/jnilo1/hacking-lidl-silvercrest-gateway</p>
+      </div>
+    </section>
+
     <!-- ================= INFOS ================= -->
     <section class="panel" id="tab-infos">
       <div class="card warn">
@@ -360,7 +409,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.6';
+    window.APP_VERSION = '1.7';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
@@ -369,6 +418,7 @@
   <script src="plans.js"></script>
   <script src="steps.js"></script>
   <script src="steps_gemma.js"></script>
+  <script src="steps_flash.js"></script>
   <script src="app.js"></script>
   <script src="autobackup.js"></script>
   <script src="update-check.js"></script>
