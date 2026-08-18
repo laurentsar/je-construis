@@ -375,10 +375,10 @@
     $('plans').innerHTML = Plans.toutes(R).join('');
   }
 
-  // Les trois projets partagent le même onglet Étapes : seule la source des
+  // Les quatre projets partagent le même onglet Étapes : seule la source des
   // étapes change selon le projet actif (calculée depuis R pour le carport,
-  // fixe pour Gemma et la passerelle Zigbee), chacune avec ses cases cochées
-  // gardées sous une clé dédiée.
+  // fixe pour les trois autres), chacune avec ses cases cochées gardées sous
+  // une clé dédiée.
   function rendreEtapesActif() {
     var etapes, cle, finMsg, enCoursMsg;
     if (projetActif === 'gemma') {
@@ -393,6 +393,12 @@
       cle = '__flash__';
       finMsg = ' — passerelle flashée, bravo !';
       enCoursMsg = ' — coche au fur et à mesure du flash.';
+    } else if (projetActif === 'routeur') {
+      if (!global_RouteurSteps()) return;
+      etapes = window.RouteurSteps.construire();
+      cle = '__routeur__';
+      finMsg = ' — routeur en service, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du montage.';
     } else {
       etapes = Steps.construire(R);
       cle = P.nom || 'projet';
@@ -460,21 +466,29 @@
     return window.FlashSteps && typeof window.FlashSteps.construire === 'function';
   }
 
+  function global_RouteurSteps() {
+    return window.RouteurSteps && typeof window.RouteurSteps.construire === 'function';
+  }
+
   // Bascule les six onglets partagés (Projet/Matériaux/Débit/Plans/Étapes/
   // Infos) sur le contenu du projet actif : chaque onglet garde son rôle,
-  // mais le carport, le Traducteur Gemma et la passerelle Zigbee n'y montrent
-  // pas la même chose (le carport seul a des cotes, un débit et des plans).
+  // mais seul le carport a des cotes, un débit et des plans — les trois
+  // autres projets n'y montrent qu'un texte de présentation adapté.
   function appliquerProjetActif() {
     var c = projetActif === 'carport';
     var g = projetActif === 'gemma';
+    var f = projetActif === 'flash';
+    var r = projetActif === 'routeur';
 
     $('projetCarportBody').style.display = c ? '' : 'none';
     $('projetGemmaBody').style.display = g ? '' : 'none';
-    $('projetFlashBody').style.display = (!c && !g) ? '' : 'none';
+    $('projetFlashBody').style.display = f ? '' : 'none';
+    $('projetRouteurBody').style.display = r ? '' : 'none';
 
     $('materiauxCarportBody').style.display = c ? '' : 'none';
     $('materiauxGemmaBody').style.display = g ? '' : 'none';
-    $('materiauxFlashBody').style.display = (!c && !g) ? '' : 'none';
+    $('materiauxFlashBody').style.display = f ? '' : 'none';
+    $('materiauxRouteurBody').style.display = r ? '' : 'none';
 
     $('debitCarportBody').style.display = c ? '' : 'none';
     $('debitNonApplicable').style.display = c ? 'none' : '';
@@ -483,19 +497,24 @@
     if (!c) {
       var texteDebit = g
         ? 'Le Traducteur Gemma n\'a pas de débit de coupe : ce n\'est pas un ouvrage en bois, mais un appareil électronique à assembler.'
-        : 'La passerelle Zigbee n\'a pas de débit de coupe : il n\'y a pas de bois à débiter, seulement un appareil à flasher.';
+        : f
+        ? 'La passerelle Zigbee n\'a pas de débit de coupe : il n\'y a pas de bois à débiter, seulement un appareil à flasher.'
+        : 'Le routeur solaire n\'a pas de débit de coupe : c\'est un boîtier électronique à câbler, pas un ouvrage en bois.';
       var textePlans = g
         ? 'Le Traducteur Gemma n\'a pas de plans cotés : les fichiers du boîtier (STL) sont fournis directement par le dépôt gemma-translator.'
-        : 'La passerelle Zigbee n\'a pas de plans cotés : c\'est un flash logiciel sur du matériel existant, pas une structure à dimensionner.';
+        : f
+        ? 'La passerelle Zigbee n\'a pas de plans cotés : c\'est un flash logiciel sur du matériel existant, pas une structure à dimensionner.'
+        : 'Le routeur solaire n\'a pas de plans cotés : la carte et son boîtier DIN sont fournis tout faits par l\'association APPER.';
       $('debitNonApplicableTexte').textContent = texteDebit;
       $('plansNonApplicableTexte').textContent = textePlans;
     }
 
-    $('etapesTitre').textContent = c ? 'Marche à suivre' : (g ? 'Marche à suivre du montage' : 'Marche à suivre du flash');
+    $('etapesTitre').textContent = c ? 'Marche à suivre' : g ? 'Marche à suivre du montage' : f ? 'Marche à suivre du flash' : 'Marche à suivre du montage';
 
     $('infosCarportBody').style.display = c ? '' : 'none';
     $('infosGemmaBody').style.display = g ? '' : 'none';
-    $('infosFlashBody').style.display = (!c && !g) ? '' : 'none';
+    $('infosFlashBody').style.display = f ? '' : 'none';
+    $('infosRouteurBody').style.display = r ? '' : 'none';
 
     rendreEtapesActif();
   }
@@ -504,6 +523,21 @@
     projetActif = nom;
     sauver(K_ACTIF, nom);
     appliquerProjetActif();
+  }
+
+  // Le routeur solaire n'a d'intérêt que si le carport produit du solaire :
+  // sa carte d'accueil et son entrée dans « Mes projets » restent masquées
+  // tant que l'option Panneaux solaires n'est pas cochée sur le carport.
+  function routeurConcerne() {
+    return !!P.solaire;
+  }
+
+  function appliquerVisibiliteRouteur() {
+    var concerne = routeurConcerne();
+    var home = $('homeRouteur');
+    var hint = $('routeurCache');
+    if (home) home.style.display = concerne ? '' : 'none';
+    if (hint) hint.style.display = concerne ? 'none' : '';
   }
 
   function rendrePied() {
@@ -554,6 +588,23 @@
     fla.appendChild(flaOpen);
     box.appendChild(fla);
 
+    // Le routeur solaire ne s'épingle que si le carport a des panneaux
+    // solaires activés : sans production solaire, il n'y a pas de surplus à
+    // router, donc pas d'intérêt à proposer ce projet.
+    if (routeurConcerne()) {
+      var rou = el('div', 'projet');
+      rou.innerHTML = '<div style="flex:1"><div class="p-nom">🔆 Routeur solaire</div>' +
+        '<div class="p-sub">Route le surplus PV vers une charge · guide pas à pas</div></div>';
+      var rouOpen = el('button', null, '📂');
+      rouOpen.title = 'Ouvrir le guide de montage';
+      rouOpen.addEventListener('click', function () {
+        choisirProjet('routeur');
+        montrerOnglet('projet');
+      });
+      rou.appendChild(rouOpen);
+      box.appendChild(rou);
+    }
+
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
         'Aucun carport enregistré pour l\'instant. Le carport en cours est gardé automatiquement.'));
@@ -602,6 +653,8 @@
     rendrePlans();
     rendreEtapesActif();
     rendrePied();
+    appliquerVisibiliteRouteur();
+    rendreProjets();
     sauver(K_COURANT, P);
     if (!silencieux && R.alertes.length) {
       // Rien de bloquant : l'onglet Matériaux affiche le détail.
@@ -693,6 +746,11 @@
 
     $('homeFlash').addEventListener('click', function () {
       choisirProjet('flash');
+      montrerOnglet('projet');
+    });
+
+    $('homeRouteur').addEventListener('click', function () {
+      choisirProjet('routeur');
       montrerOnglet('projet');
     });
 
