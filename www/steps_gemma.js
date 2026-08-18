@@ -75,7 +75,8 @@
         details: [
           'Récupère le dépôt : git clone https://github.com/google-gemma/gemma-translator',
           'Entre dans le dossier, puis rends les scripts exécutables :',
-          'chmod +x setup.sh download_model.sh start.sh deploy-pi.sh'
+          'chmod +x setup.sh download_model.sh start.sh deploy-pi.sh',
+          'Contenu du dépôt : frontend/ (interface React/Vite), backend/ (serveur Python, Moonshine STT/TTS), deploy/ (service systemd), stl/ (fichiers du boîtier) — les quatre scripts font le reste.'
         ]
       },
       {
@@ -131,13 +132,12 @@
         duree: 'prise en main immédiate',
         outils: ['Le clavier de l\'appareil'],
         details: [
-          'Deux « voies » se font face : une par personne, chacune avec sa langue.',
-          'Maintiens la touche Z pour parler (appuyer-parler), relâche pour lancer la traduction, qui est ensuite dite dans la langue de l\'autre.',
-          'Flèches ← et → : changer la langue de la personne active.',
-          'Barre Espace : passer d\'une personne à l\'autre (mode paysage, par défaut).',
-          'Réglages ⚙ : choisir le mode clavier (paysage à un opérateur, ou vertical à deux mains).'
+          'Deux « voies » se font face sur l\'écran : Personne 1 et Personne 2, chacune avec sa propre langue qui défile au clavier.',
+          'Mode paysage (par défaut, un seul opérateur) : Espace bascule la personne active — encadrée de coins lumineux à l\'écran ; Z maintenu enregistre la personne active, relâcher lance la traduction ; ← → changent sa langue.',
+          'Mode vertical (à deux mains, un opérateur par personne) : Z enregistre la Personne 1, X enregistre la Personne 2 ; ← → changent la langue de la Personne 1, les touches − et + changent celle de la Personne 2.',
+          'Pour changer de mode : Réglages ⚙ → « Keyboard Mode » → Paysage ou Vertical. Le choix est mémorisé sur l\'appareil (localStorage).'
         ],
-        astuce: 'La rotation de langue est bloquée pendant l\'enregistrement, et les raccourcis sont ignorés quand on est dans un champ de réglage : c\'est voulu, pour ne pas déclencher une action par erreur.'
+        astuce: 'La rotation de langue est bloquée pendant l\'enregistrement, et les raccourcis sont ignorés quand le focus est sur un champ de réglage : c\'est voulu, pour ne pas déclencher une action par erreur.'
       }
     ];
   }

@@ -15,7 +15,7 @@
       <img class="brand-logo" src="img/icon-192.png" alt="" />
       <div>
         <h1>Je Construis <span id="verChip" class="ver-chip"></span></h1>
-        <p class="sub">3 projets à construire soi-même, pas à pas</p>
+        <p class="sub">Plusieurs projets à construire soi-même, pas à pas</p>
       </div>
     </div>
     <button id="btnProjets" class="icon-btn" title="Mes projets">📂</button>
@@ -36,7 +36,7 @@
     <section class="panel active" id="tab-accueil">
       <div class="card">
         <h2>Mes projets</h2>
-        <p class="hint">Trois projets à construire soi-même, pas à pas.</p>
+        <p class="hint">Choisis un projet à construire, pas à pas.</p>
         <div class="projets-home">
           <button type="button" class="projet-home" id="homeCarport">
             <span class="ph-ico">🏗️</span>
@@ -62,7 +62,16 @@
             </span>
             <span class="ph-fleche">›</span>
           </button>
+          <button type="button" class="projet-home" id="homeRouteur" style="display:none">
+            <span class="ph-ico">🔆</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Routeur solaire</span>
+              <span class="ph-sub">Route le surplus PV vers une charge · guide pas à pas</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
         </div>
+        <p class="hint" id="routeurCache" style="display:none">🔆 Un 4ᵉ projet, le <strong>routeur solaire</strong>, apparaît ici dès que l'option « Panneaux solaires » est cochée sur le carport — il route le surplus produit vers une charge (ballon d'eau chaude...) au lieu de le perdre.</p>
       </div>
     </section>
 
@@ -257,6 +266,10 @@
       <div id="projetGemmaBody" style="display:none">
         <div class="card">
           <h2>🌍 Traducteur Gemma</h2>
+          <figure class="photo-ref">
+            <img src="img/gemma/apercu.jpg" alt="L'appareil assemblé, avec son micro et son écran affichant l'interface de traduction" loading="lazy" />
+            <figcaption>Aperçu du dépôt gemma-translator : le boîtier assemblé, avec son micro et son écran.</figcaption>
+          </figure>
           <p class="hint">Un deuxième projet à construire, sur le même principe que le carport : ici, un petit traducteur vocal <strong>hors ligne</strong> à assembler soi-même, à partir du projet open-source <em>gemma-translator</em> de Google Creative Lab (Apache 2.0). Il traduit la voix de deux personnes qui se font face, sur un Raspberry Pi 5, sans rien envoyer sur internet une fois installé.</p>
           <p class="hint">C'est un guide de montage, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour la liste complète à commander.</p>
         </div>
@@ -267,6 +280,14 @@
           <h2>📡 Passerelle Zigbee</h2>
           <p class="hint">Un troisième projet à construire, sur le même principe que le carport et le Traducteur Gemma : ici, on remplace le firmware d'origine d'une passerelle Zigbee Lidl Silvercrest par un firmware <strong>open source compatible Home Assistant</strong>, à partir du projet <em>hacking-lidl-silvercrest-gateway</em>. La procédure part d'un PC sous Ubuntu et couvre le câblage, le flash du système et de la radio Zigbee/Thread.</p>
           <p class="hint">C'est un guide de flash matériel, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour la liste complète à réunir.</p>
+        </div>
+      </div>
+
+      <div id="projetRouteurBody" style="display:none">
+        <div class="card">
+          <h2>🔆 Routeur solaire</h2>
+          <p class="hint">Un quatrième projet, qui complète directement l'option <strong>Panneaux solaires</strong> du carport : ce routeur PV mesure en temps réel les échanges au compteur électrique et envoie automatiquement le surplus solaire vers une charge (ballon d'eau chaude, chauffage...) au lieu de le revendre à perte, à partir du projet open-source <em>pv-router-esp32</em> de l'association APPER.</p>
+          <p class="hint">C'est un guide de montage, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour la liste complète à commander.</p>
         </div>
       </div>
     </section>
@@ -322,6 +343,24 @@
             </table>
           </div>
           <p class="hint" style="margin-top:12px">Aucun budget n'est communiqué pour ce matériel — à chiffrer toi-même selon les prix du moment.</p>
+        </div>
+      </div>
+
+      <div id="materiauxRouteurBody" style="display:none">
+        <div class="card">
+          <h2>Matériel à prévoir</h2>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <tbody>
+                <tr><td><strong>Carte routeur DIN</strong></td><td>Vendue par l'association APPER, support DIN fourni</td><td class="qte">~25 €</td></tr>
+                <tr><td><strong>TTGO T-Display</strong></td><td>ESP32 avec écran couleur intégré, non fourni par l'association</td><td class="qte">~12 €</td></tr>
+                <tr><td><strong>Sonde SCT013</strong></td><td>Mesure de courant (ou Shelly EM en alternative)</td><td class="qte">~8 €</td></tr>
+                <tr><td><strong>Sonde(s) Dallas 18B20</strong></td><td>Température — fortement recommandées si un variateur est utilisé</td><td class="qte">—</td></tr>
+                <tr><td><strong>Variateur (optionnel)</strong></td><td>Robotdyn (AC) ou relais statique SSR, pour piloter une charge à distance</td><td class="qte">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top:12px"><strong>Budget approximatif du kit de base : ~45 €</strong> (carte APPER + TTGO + SCT013, hors variateur). Achetée via l'association APPER, la carte ouvre droit à un crédit d'impôt de 60 % pour les particuliers en France.</p>
         </div>
       </div>
     </section>
@@ -381,7 +420,10 @@
         <p class="hint" style="margin-top:12px"><strong>Hors ligne / en ligne</strong></p>
         <p class="hint">Seul le téléchargement du modèle (une fois, à l'étape « Télécharger le modèle Gemma ») demande internet et un compte Hugging Face. Une fois le modèle en place, l'appareil traduit sans rien envoyer sur le réseau.</p>
 
-        <p class="hint" style="margin-top:12px">Ce n'est pas un produit officiel Google : le projet n'est pas couvert par leur programme de récompense de failles (VRP).</p>
+        <p class="hint" style="margin-top:12px"><strong>Deux modes clavier</strong></p>
+        <p class="hint"><strong>Paysage</strong> (par défaut) : un seul opérateur pilote tout — Espace change la personne active, Z enregistre, ← → changent la langue. <strong>Vertical</strong> : chaque personne a ses propres touches — Z / X pour enregistrer, ← → et − + pour changer de langue. Le choix se fait dans Réglages ⚙ → « Keyboard Mode ».</p>
+
+        <p class="hint" style="margin-top:12px">Ce n'est pas un produit officiel Google : le projet n'est pas couvert par leur programme de récompense de failles (VRP). Fait par une petite équipe du Google Creative Lab (Alan Yam, Shashwath Santosh, Dan Motzenbecker).</p>
         <p class="hint">Code source et licence : github.com/google-gemma/gemma-translator (Apache 2.0)</p>
       </div>
 
@@ -419,6 +461,35 @@
         <p class="hint">Code source : github.com/jnilo1/hacking-lidl-silvercrest-gateway</p>
       </div>
 
+      <div id="infosRouteurBody" class="card" style="display:none">
+        <h2>À savoir</h2>
+        <p class="hint">C'est un guide de montage matériel : une fois configuré, le routeur fonctionne seul sur le réseau électrique, indépendamment de cette application.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Comment ça marche</strong></p>
+        <p class="hint">La sonde SCT013 mesure en continu le sens du courant au compteur : en <strong>injection</strong> (surplus solaire), le routeur augmente progressivement la charge ; en <strong>soutirage</strong> (consommation réseau), il la réduit. L'objectif est de garder l'échange avec le réseau proche de 0 W, pour maximiser l'autoconsommation plutôt que de revendre le surplus à perte.</p>
+
+        <div class="photo-ref">
+          <img src="img/routeur/dashboard.jpg" alt="Tableau de bord web du routeur PV : puissance réseau, puissance routée, température et états du système" loading="lazy" />
+        </div>
+
+        <p class="hint" style="margin-top:12px"><strong>Sécurité électrique</strong></p>
+        <p class="hint">Ce projet se raccorde au réseau électrique de la maison : câbles correctement isolés, protection par un disjoncteur 2 A en plus du fusible intégré à la carte, et une sonde Dallas 18B20 systématique si un variateur est utilisé (pour éviter toute surchauffe). En cas de doute, fais appel à un professionnel qualifié.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Problèmes rencontrés et solutions</strong></p>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <tbody>
+              <tr><td><strong>Pas de connexion Wi-Fi</strong></td><td>Vérifier les identifiants réseau, redémarrer l'appareil, vérifier le niveau de signal sur l'écran TTGO</td></tr>
+              <tr><td><strong>Mesure de puissance incorrecte</strong></td><td>Vérifier le positionnement de la sonde SCT013 (phase de sortie du compteur), ajuster cosphi et offset via l'interface</td></tr>
+              <tr><td><strong>Sonde de température non détectée</strong></td><td>Vérifier le câblage Dallas 18B20, forcer une réinitialisation avec /resetdallas</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="hint" style="margin-top:12px">Développé bénévolement par Sunstain Tech Solutions pour la communauté de l'association APPER (schéma de câblage réalisé par Titi). Licence <strong>CC BY-NC-SA 4.0</strong> — usage non commercial uniquement.</p>
+        <p class="hint">Code source : github.com/xlyric/pv-router-esp32 · Documentation complète : wiki.apper-solaire.org</p>
+      </div>
+
       <div class="card">
         <h2>Mes projets</h2>
         <div id="projets"></div>
@@ -440,7 +511,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.9';
+    window.APP_VERSION = '1.11';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
@@ -450,6 +521,7 @@
   <script src="steps.js"></script>
   <script src="steps_gemma.js"></script>
   <script src="steps_flash.js"></script>
+  <script src="steps_routeur.js"></script>
   <script src="app.js"></script>
   <script src="autobackup.js"></script>
   <script src="update-check.js"></script>
