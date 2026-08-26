@@ -19,6 +19,7 @@
   var K_PRIX = 'jc:prix';
   var K_COCHES = 'jc:coches';
   var K_ACTIF = 'jc:actif';
+  var K_DALLE = 'jc:dalle';
 
   var DEFAUT = {
     nom: 'Mon carport',
@@ -49,9 +50,16 @@
   P.prix = charger(K_PRIX) || P.prix || {};
   var R = null;                 // dernier résultat de calcul
   var coches = charger(K_COCHES) || {};
-  // Projet actif : quel guide les six onglets affichent en ce moment.
-  // 'carport' (formulaire + calculs), 'gemma' ou 'flash' (guides fixes).
+  // Projet actif : quel guide les onglets affichent en ce moment.
+  // 'carport' (formulaire + calculs), 'gemma'/'flash'/'routeur' (guides
+  // fixes) ou 'dalle' (calculateur indépendant, sans étapes à cocher).
   var projetActif = charger(K_ACTIF) || 'carport';
+
+  // Calculateur de dalle béton : cinquième projet, un simple formulaire à
+  // deux entrées/sorties (pas un chantier à cocher étape par étape), donc un
+  // état à part plutôt qu'un fichier steps_dalle.js vide de sens.
+  var DEFAUT_DALLE = { longueur: 6, largeur: 4, epaisseur: 0.15, dosage: 350, marge: 2 };
+  var D = charger(K_DALLE) || Object.assign({}, DEFAUT_DALLE);
 
   // ------------------------------------------------------------------ outils
   function $(id) { return document.getElementById(id); }
@@ -399,6 +407,11 @@
       cle = '__routeur__';
       finMsg = ' — routeur en service, bravo !';
       enCoursMsg = ' — coche au fur et à mesure du montage.';
+    } else if (projetActif === 'dalle') {
+      // Pas d'étapes à cocher : c'est un calculateur, pas un chantier.
+      // L'onglet lui-même est masqué (voir appliquerProjetActif).
+      $('etapes').innerHTML = '';
+      return;
     } else {
       etapes = Steps.construire(R);
       cle = P.nom || 'projet';
@@ -471,28 +484,32 @@
   }
 
   // Bascule les onglets partagés sur le contenu du projet actif : Projet/
-  // Matériaux/Étapes/Infos gardent leur rôle avec un contenu adapté, tandis
-  // que Débit et Plans — qui n'ont de sens que pour le carport (bois à
-  // débiter, cotes à dessiner) — sont carrément masqués de la barre pour
-  // les trois autres projets, au lieu d'afficher un message à vide.
+  // Matériaux/Infos gardent leur rôle avec un contenu adapté, tandis que
+  // Débit et Plans (n'ont de sens que pour le carport) et Étapes (n'a de
+  // sens que pour un chantier à cocher, pas pour le calculateur de dalle)
+  // sont carrément masqués de la barre plutôt que d'afficher du vide.
   function appliquerProjetActif() {
     var c = projetActif === 'carport';
     var g = projetActif === 'gemma';
     var f = projetActif === 'flash';
     var r = projetActif === 'routeur';
+    var d = projetActif === 'dalle';
 
     $('projetCarportBody').style.display = c ? '' : 'none';
     $('projetGemmaBody').style.display = g ? '' : 'none';
     $('projetFlashBody').style.display = f ? '' : 'none';
     $('projetRouteurBody').style.display = r ? '' : 'none';
+    $('projetDalleBody').style.display = d ? '' : 'none';
 
     $('materiauxCarportBody').style.display = c ? '' : 'none';
     $('materiauxGemmaBody').style.display = g ? '' : 'none';
     $('materiauxFlashBody').style.display = f ? '' : 'none';
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
+    $('materiauxDalleBody').style.display = d ? '' : 'none';
 
     $('tabDebit').style.display = c ? '' : 'none';
     $('tabPlans').style.display = c ? '' : 'none';
+    $('tabEtapes').style.display = d ? 'none' : '';
 
     $('etapesTitre').textContent = c ? 'Marche à suivre' : g ? 'Marche à suivre du montage' : f ? 'Marche à suivre du flash' : 'Marche à suivre du montage';
 
@@ -500,7 +517,9 @@
     $('infosGemmaBody').style.display = g ? '' : 'none';
     $('infosFlashBody').style.display = f ? '' : 'none';
     $('infosRouteurBody').style.display = r ? '' : 'none';
+    $('infosDalleBody').style.display = d ? '' : 'none';
 
+    if (d) { etatVersFormDalle(); recalculerDalle(); }
     rendreEtapesActif();
   }
 
@@ -522,6 +541,58 @@
       '</div>';
     $('couvHint').textContent = Calc.COUVERTURES[P.couverture].note +
       ' Pente minimale : ' + Calc.COUVERTURES[P.couverture].penteMini + ' %.';
+  }
+
+  // --------------------------------------------------- calculateur de dalle
+  // Reprend la méthode d'une infographie courante : volume de la dalle ×
+  // dosage en kg de ciment par m³, converti en sacs de 35 kg.
+  function calculerDalle() {
+    var longueur = +D.longueur || 0, largeur = +D.largeur || 0, epaisseur = +D.epaisseur || 0;
+    var dosage = +D.dosage || 0, marge = +D.marge || 0;
+    var volume = longueur * largeur * epaisseur;
+    var kgCiment = volume * dosage;
+    var sacs = Math.ceil(kgCiment / 35);
+    return { volume: volume, kgCiment: kgCiment, sacs: sacs, sacsAvecMarge: sacs + marge };
+  }
+
+  function formVersEtatDalle() {
+    ['longueur', 'largeur', 'epaisseur', 'dosage', 'marge'].forEach(function (k) {
+      D[k] = parseFloat($('d_' + k).value) || 0;
+    });
+  }
+
+  function etatVersFormDalle() {
+    ['longueur', 'largeur', 'epaisseur', 'dosage', 'marge'].forEach(function (k) {
+      $('d_' + k).value = D[k];
+    });
+  }
+
+  function rendreDalle() {
+    var r = calculerDalle();
+    var resumeHtml = '<div class="resume-grid">' +
+      '<div class="stat"><b>' + Calc.arrondi(r.volume, 2) + ' m³</b><span>Volume de béton</span></div>' +
+      '<div class="stat"><b>' + Math.round(r.kgCiment).toLocaleString('fr-FR') + ' kg</b><span>Ciment nécessaire</span></div>' +
+      '<div class="stat"><b>' + r.sacs + '</b><span>Sacs de 35 kg</span></div>' +
+      '<div class="stat"><b>' + r.sacsAvecMarge + '</b><span>Sacs avec marge</span></div>' +
+      '</div>';
+    $('dalleResume').innerHTML = resumeHtml;
+
+    $('materiauxDalleBody').innerHTML =
+      '<div class="card">' +
+      '<h2>Matériel à prévoir</h2>' +
+      '<div style="overflow-x:auto"><table class="tbl"><tbody>' +
+      '<tr><td><strong>Ciment</strong></td><td>Pour ' + Calc.arrondi(r.volume, 2) + ' m³ à ' + (D.dosage || 0) + ' kg/m³</td><td class="qte">' + r.sacsAvecMarge + ' sacs 35 kg</td></tr>' +
+      '<tr><td><strong>Sable</strong></td><td>Proportion à respecter selon le dosage retenu (voir Infos)</td><td class="qte">—</td></tr>' +
+      '<tr><td><strong>Gravier</strong></td><td>Proportion à respecter selon le dosage retenu (voir Infos)</td><td class="qte">—</td></tr>' +
+      '<tr><td><strong>Eau</strong></td><td>Quantité selon la consistance recherchée du béton</td><td class="qte">—</td></tr>' +
+      '</tbody></table></div>' +
+      '<p class="hint" style="margin-top:12px">' + r.sacsAvecMarge + ' sacs de ciment de 35 kg incluent une marge de sécurité de ' + (D.marge || 0) + ' sac(s), pour ne pas s\'arrêter en cours de coulage.</p>' +
+      '</div>';
+  }
+
+  function recalculerDalle() {
+    rendreDalle();
+    sauver(K_DALLE, D);
   }
 
   function rendreProjets() {
@@ -570,6 +641,19 @@
     });
     rou.appendChild(rouOpen);
     box.appendChild(rou);
+
+    // Idem pour le calculateur de dalle, épinglé en dernier.
+    var dal = el('div', 'projet');
+    dal.innerHTML = '<div style="flex:1"><div class="p-nom">🧱 Dalle béton</div>' +
+      '<div class="p-sub">Calcule le ciment nécessaire · volume → sacs</div></div>';
+    var dalOpen = el('button', null, '📂');
+    dalOpen.title = 'Ouvrir le calculateur';
+    dalOpen.addEventListener('click', function () {
+      choisirProjet('dalle');
+      montrerOnglet('projet');
+    });
+    dal.appendChild(dalOpen);
+    box.appendChild(dal);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -716,6 +800,18 @@
     $('homeRouteur').addEventListener('click', function () {
       choisirProjet('routeur');
       montrerOnglet('projet');
+    });
+
+    $('homeDalle').addEventListener('click', function () {
+      choisirProjet('dalle');
+      montrerOnglet('projet');
+    });
+
+    document.querySelectorAll('#projetDalleBody input').forEach(function (input) {
+      input.addEventListener('input', function () {
+        formVersEtatDalle();
+        recalculerDalle();
+      });
     });
 
     $('btnCopyMat').addEventListener('click', function () {

@@ -27,7 +27,7 @@
     <button class="tab" data-tab="materiaux">📋 Matériaux</button>
     <button class="tab" data-tab="debit" id="tabDebit">✂️ Débit</button>
     <button class="tab" data-tab="plans" id="tabPlans">📏 Plans</button>
-    <button class="tab" data-tab="etapes">🔨 Étapes</button>
+    <button class="tab" data-tab="etapes" id="tabEtapes">🔨 Étapes</button>
     <button class="tab" data-tab="infos">ℹ️ Infos</button>
   </nav>
 
@@ -67,6 +67,14 @@
             <span class="ph-txt">
               <span class="ph-nom">Routeur solaire</span>
               <span class="ph-sub">Route le surplus PV vers une charge · guide pas à pas</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
+          <button type="button" class="projet-home" id="homeDalle">
+            <span class="ph-ico">🧱</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Dalle béton</span>
+              <span class="ph-sub">Calcule le ciment nécessaire · volume → sacs</span>
             </span>
             <span class="ph-fleche">›</span>
           </button>
@@ -289,6 +297,40 @@
           <p class="hint">C'est un guide de montage, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour la liste complète à commander.</p>
         </div>
       </div>
+
+      <div id="projetDalleBody" style="display:none">
+        <div class="card">
+          <h2>🧱 Dalle béton</h2>
+          <p class="hint">Un cinquième projet, différent des quatre autres : pas un chantier à cocher étape par étape, mais un <strong>calculateur</strong> — combien de sacs de ciment pour couler une dalle, à partir de ses dimensions et du dosage voulu.</p>
+        </div>
+
+        <div class="card">
+          <h2>Dimensions et dosage</h2>
+          <div class="grid2">
+            <label>Longueur (m)
+              <input type="number" id="d_longueur" step="0.1" min="0" max="50" value="6" />
+            </label>
+            <label>Largeur (m)
+              <input type="number" id="d_largeur" step="0.1" min="0" max="50" value="4" />
+            </label>
+            <label>Épaisseur (m)
+              <input type="number" id="d_epaisseur" step="0.01" min="0" max="1" value="0.15" />
+            </label>
+            <label>Dosage (kg de ciment / m³)
+              <input type="number" id="d_dosage" step="10" min="0" max="600" value="350" />
+            </label>
+            <label>Marge de sécurité (sacs)
+              <input type="number" id="d_marge" step="1" min="0" max="20" value="2" />
+            </label>
+          </div>
+          <p class="hint">Le dosage varie selon l'ouvrage : plus léger pour une terrasse, plus dosé pour une fondation ou un béton fortement sollicité — vérifie la préconisation du fabricant ou d'un professionnel avant de commander.</p>
+        </div>
+
+        <div class="card">
+          <h2>Résultat</h2>
+          <div id="dalleResume"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ================= MATÉRIAUX ================= -->
@@ -362,6 +404,8 @@
           <p class="hint" style="margin-top:12px"><strong>Budget approximatif du kit de base : ~45 €</strong> (carte APPER + TTGO + SCT013, hors variateur). Achetée via l'association APPER, la carte ouvre droit à un crédit d'impôt de 60 % pour les particuliers en France.</p>
         </div>
       </div>
+
+      <div id="materiauxDalleBody" style="display:none"></div>
     </section>
 
     <!-- ================= DÉBIT ================= -->
@@ -481,6 +525,22 @@
         <p class="hint">Code source : github.com/xlyric/pv-router-esp32 · Documentation complète : wiki.apper-solaire.org</p>
       </div>
 
+      <div id="infosDalleBody" class="card" style="display:none">
+        <h2>À savoir</h2>
+        <p class="hint">C'est un calculateur, pas un guide de montage : il t'aide à commander la bonne quantité de ciment avant de couler, rien de plus.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>La méthode de calcul</strong></p>
+        <p class="hint">Volume de béton = longueur × largeur × épaisseur. Ce volume, multiplié par le dosage choisi (en kg de ciment par m³), donne la masse de ciment nécessaire — divisée par 35 kg (poids d'un sac courant), ça donne le nombre de sacs. Une marge de quelques sacs évite de s'arrêter en cours de coulage.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Sable, gravier et eau</strong></p>
+        <p class="hint">Le ciment n'est qu'un composant du béton : à titre indicatif, un mélange courant tourne autour d'1 volume de ciment pour 2 de sable et 3 de gravier, avec juste assez d'eau pour une consistance travaillable. Les proportions exactes dépendent du dosage retenu et du type de granulats — suis plutôt les indications du fabricant de ciment.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Quel dosage choisir ?</strong></p>
+        <p class="hint">Le dosage en ciment varie selon la résistance recherchée : une terrasse, un garage ou une fondation n'utilisent pas forcément le même. 350 kg/m³ est une valeur courante pour une dalle classique, mais vérifie la préconisation adaptée à ton ouvrage avant de commander — en cas de doute, demande conseil en négoce ou à un professionnel.</p>
+
+        <p class="hint" style="margin-top:12px">Méthode de calcul inspirée d'une infographie de vulgarisation sur le dosage du béton ; les prescriptions varient selon la résistance visée, le type d'ouvrage et les normes en vigueur.</p>
+      </div>
+
       <div class="card">
         <h2>Mes projets</h2>
         <div id="projets"></div>
@@ -502,7 +562,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.13';
+    window.APP_VERSION = '1.14';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
