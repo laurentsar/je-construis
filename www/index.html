@@ -78,6 +78,14 @@
             </span>
             <span class="ph-fleche">›</span>
           </button>
+          <button type="button" class="projet-home" id="homeEcran">
+            <span class="ph-ico">🖥️</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Écran domotique</span>
+              <span class="ph-sub">Écran AliExpress 15 € → dashboard Home Assistant</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
         </div>
       </div>
     </section>
@@ -331,6 +339,14 @@
           <div id="dalleResume"></div>
         </div>
       </div>
+
+      <div id="projetEcranBody" style="display:none">
+        <div class="card">
+          <h2>🖥️ Écran domotique</h2>
+          <p class="hint">Un sixième projet, inspiré d'un article sur un petit écran GeekMagic à 15 € transformé en tableau de bord domotique grâce à l'IA : ici, le même résultat s'obtient sans écrire de script, grâce au projet open source <em>geekmagic-hacs</em> qui fait le rendu du tableau de bord directement dans Home Assistant et le pousse à l'écran par le réseau.</p>
+          <p class="hint">C'est un guide de montage, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour ce qu'il faut réunir.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ================= MATÉRIAUX ================= -->
@@ -406,6 +422,22 @@
       </div>
 
       <div id="materiauxDalleBody" style="display:none"></div>
+
+      <div id="materiauxEcranBody" style="display:none">
+        <div class="card">
+          <h2>Matériel à prévoir</h2>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <tbody>
+                <tr><td><strong>GeekMagic SmallTV / SmallTV Ultra</strong></td><td>Écran 240 × 240 px sur ESP8266, vendu comme station météo</td><td class="qte">~15 €</td></tr>
+                <tr><td><strong>Home Assistant + HACS</strong></td><td>Prérequis : une instance déjà installée, avec HACS activé</td><td class="qte">—</td></tr>
+                <tr><td><strong>Capteurs déjà suivis</strong></td><td>Température, CO2, énergie... n'importe quelle entité déjà dans Home Assistant peut être affichée</td><td class="qte">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top:12px">Le SmallTV Pro (ESP32, plus de mémoire) fonctionne aussi mais coûte nettement plus cher — inutile pour ce projet, le SmallTV / SmallTV Ultra suffit largement.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ================= DÉBIT ================= -->
@@ -541,6 +573,23 @@
         <p class="hint" style="margin-top:12px">Méthode de calcul inspirée d'une infographie de vulgarisation sur le dosage du béton ; les prescriptions varient selon la résistance visée, le type d'ouvrage et les normes en vigueur.</p>
       </div>
 
+      <div id="infosEcranBody" class="card" style="display:none">
+        <h2>À savoir</h2>
+        <p class="hint">C'est un guide de montage logiciel : une fois configuré, le tableau de bord tourne entièrement dans Home Assistant, indépendamment de cette application.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>D'où vient ce projet</strong></p>
+        <p class="hint">Un article a raconté comment un petit écran GeekMagic à 15 € (vendu comme gadget météo) est devenu un tableau de bord domotique en une heure, à l'aide d'un agent IA qui écrivait des scripts sur mesure. Ce guide reprend la même idée matérielle, mais avec un projet open source déjà tout fait à la place du script maison : <em>geekmagic-hacs</em>, une intégration Home Assistant qui fait le même travail — rendu de l'image côté serveur, envoi à l'écran par le réseau — sans écrire une ligne de code.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Tout reste local</strong></p>
+        <p class="hint">Le rendu se fait entièrement sur ta Home Assistant ; l'écran ne fait que recevoir une image par HTTP. Aucune donnée de la maison ne part vers un service tiers, contrairement à un afficheur relié au cloud d'un fabricant — et pour une quinzaine d'euros, contre cinq à dix fois plus pour un afficheur mural vendu tout prêt.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Limites à connaître</strong></p>
+        <p class="hint">Le projet est en développement actif : son README prévient explicitement qu'il faut s'attendre à des bugs et à des changements. Le firmware d'origine du Smart Weather Clock (ancien modèle) n'a pas d'API JSON et se pilote de façon plus fragile ; les vues animées (GIF) pèsent plus lourd (~100 Ko) que les images fixes (~30 Ko) et restent optionnelles.</p>
+
+        <p class="hint" style="margin-top:12px">Intégration développée par Adrien Brault, à partir d'un script de démonstration HTTP d'Aydar (@aydarik) ; @bvweerd maintient par ailleurs un firmware ESP8266 alternatif pour ces écrans. Licence <strong>MIT</strong>.</p>
+        <p class="hint">Code source : github.com/adrienbrault/geekmagic-hacs</p>
+      </div>
+
       <div class="card">
         <h2>Mes projets</h2>
         <div id="projets"></div>
@@ -562,7 +611,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.14';
+    window.APP_VERSION = '1.15';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
@@ -573,6 +622,7 @@
   <script src="steps_gemma.js"></script>
   <script src="steps_flash.js"></script>
   <script src="steps_routeur.js"></script>
+  <script src="steps_ecran.js"></script>
   <script src="app.js"></script>
   <script src="autobackup.js"></script>
   <script src="update-check.js"></script>

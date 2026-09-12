@@ -407,6 +407,12 @@
       cle = '__routeur__';
       finMsg = ' — routeur en service, bravo !';
       enCoursMsg = ' — coche au fur et à mesure du montage.';
+    } else if (projetActif === 'ecran') {
+      if (!global_EcranSteps()) return;
+      etapes = window.EcranSteps.construire();
+      cle = '__ecran__';
+      finMsg = ' — tableau de bord en place, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du montage.';
     } else if (projetActif === 'dalle') {
       // Pas d'étapes à cocher : c'est un calculateur, pas un chantier.
       // L'onglet lui-même est masqué (voir appliquerProjetActif).
@@ -483,6 +489,10 @@
     return window.RouteurSteps && typeof window.RouteurSteps.construire === 'function';
   }
 
+  function global_EcranSteps() {
+    return window.EcranSteps && typeof window.EcranSteps.construire === 'function';
+  }
+
   // Bascule les onglets partagés sur le contenu du projet actif : Projet/
   // Matériaux/Infos gardent leur rôle avec un contenu adapté, tandis que
   // Débit et Plans (n'ont de sens que pour le carport) et Étapes (n'a de
@@ -493,18 +503,21 @@
     var g = projetActif === 'gemma';
     var f = projetActif === 'flash';
     var r = projetActif === 'routeur';
+    var e = projetActif === 'ecran';
     var d = projetActif === 'dalle';
 
     $('projetCarportBody').style.display = c ? '' : 'none';
     $('projetGemmaBody').style.display = g ? '' : 'none';
     $('projetFlashBody').style.display = f ? '' : 'none';
     $('projetRouteurBody').style.display = r ? '' : 'none';
+    $('projetEcranBody').style.display = e ? '' : 'none';
     $('projetDalleBody').style.display = d ? '' : 'none';
 
     $('materiauxCarportBody').style.display = c ? '' : 'none';
     $('materiauxGemmaBody').style.display = g ? '' : 'none';
     $('materiauxFlashBody').style.display = f ? '' : 'none';
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
+    $('materiauxEcranBody').style.display = e ? '' : 'none';
     $('materiauxDalleBody').style.display = d ? '' : 'none';
 
     $('tabDebit').style.display = c ? '' : 'none';
@@ -517,6 +530,7 @@
     $('infosGemmaBody').style.display = g ? '' : 'none';
     $('infosFlashBody').style.display = f ? '' : 'none';
     $('infosRouteurBody').style.display = r ? '' : 'none';
+    $('infosEcranBody').style.display = e ? '' : 'none';
     $('infosDalleBody').style.display = d ? '' : 'none';
 
     if (d) { etatVersFormDalle(); recalculerDalle(); }
@@ -654,6 +668,19 @@
     });
     dal.appendChild(dalOpen);
     box.appendChild(dal);
+
+    // Idem pour l'écran domotique, épinglé en dernier.
+    var ecr = el('div', 'projet');
+    ecr.innerHTML = '<div style="flex:1"><div class="p-nom">🖥️ Écran domotique</div>' +
+      '<div class="p-sub">Écran AliExpress 15 € → dashboard Home Assistant</div></div>';
+    var ecrOpen = el('button', null, '📂');
+    ecrOpen.title = 'Ouvrir le guide de montage';
+    ecrOpen.addEventListener('click', function () {
+      choisirProjet('ecran');
+      montrerOnglet('projet');
+    });
+    ecr.appendChild(ecrOpen);
+    box.appendChild(ecr);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -812,6 +839,11 @@
         formVersEtatDalle();
         recalculerDalle();
       });
+    });
+
+    $('homeEcran').addEventListener('click', function () {
+      choisirProjet('ecran');
+      montrerOnglet('projet');
     });
 
     $('btnCopyMat').addEventListener('click', function () {
