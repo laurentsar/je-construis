@@ -46,6 +46,18 @@
     prix: {}
   };
 
+  // Préréglage « Pavillon bois » : pas un projet à part, juste des cotes de
+  // départ pour le Carport — un grand pavillon ouvert à 5 travées, poteaux et
+  // chevrons, repéré sur une photo partagée (pas de source technique ni de
+  // licence claire, donc on ne reprend que les cotes générales, à ajuster).
+  var PRESET_PAVILLON = {
+    nom: 'Pavillon bois',
+    autoAjuster: false,
+    longueur: 7.8, largeur: 4.4,
+    hautAvant: 2.95, hautArriere: 2.2,
+    jambesDeForce: true
+  };
+
   var P = charger(K_COURANT) || Object.assign({}, DEFAUT);
   P.prix = charger(K_PRIX) || P.prix || {};
   var R = null;                 // dernier résultat de calcul
@@ -844,6 +856,15 @@
     $('homeEcran').addEventListener('click', function () {
       choisirProjet('ecran');
       montrerOnglet('projet');
+    });
+
+    $('homePavillon').addEventListener('click', function () {
+      P = Object.assign({}, DEFAUT, PRESET_PAVILLON, { prix: P.prix });
+      etatVersForm();
+      choisirProjet('carport');
+      recalculer();
+      montrerOnglet('projet');
+      toast('Pavillon bois chargé — ajuste les cotes à ton terrain.');
     });
 
     $('btnCopyMat').addEventListener('click', function () {
