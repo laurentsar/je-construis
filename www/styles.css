@@ -247,3 +247,4 @@ button.ghost { background: var(--card2); color: var(--text); border: 1px solid v
   .hint, .tbl th, .tbl .note { color: #555; }
   .tbl td { border-color: #ddd; }
 }
+.code-bloc { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 8px 10px; margin-top: 8px; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; white-space: pre; overflow-x: auto; user-select: text; -webkit-user-select: text; }

@@ -86,6 +86,14 @@
             </span>
             <span class="ph-fleche">›</span>
           </button>
+          <button type="button" class="projet-home" id="homeProxmox">
+            <span class="ph-ico">🍓</span>
+            <span class="ph-txt">
+              <span class="ph-nom">Proxmox sur Raspberry Pi 5</span>
+              <span class="ph-sub">Pimox → serveur de VM + Home Assistant</span>
+            </span>
+            <span class="ph-fleche">›</span>
+          </button>
           <button type="button" class="projet-home" id="homePavillon">
             <span class="ph-ico">🏛️</span>
             <span class="ph-txt">
@@ -355,6 +363,14 @@
           <p class="hint">C'est un guide de montage, sans cotes ni formulaire : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour ce qu'il faut réunir.</p>
         </div>
       </div>
+    
+      <div id="projetProxmoxBody" style="display:none">
+        <div class="card">
+          <h2>🍓 Proxmox sur Raspberry Pi 5</h2>
+          <p class="hint">Un septième projet, extrait de l'article de domo-blog.fr « Comment installer Proxmox sur Raspberry Pi 5 avec Pimox » : transformer un Raspberry Pi 5 en petit serveur de virtualisation Proxmox VE (portage ARM), puis y faire tourner Home Assistant dans une VM.</p>
+          <p class="hint">C'est un guide d'installation pas à pas, commandes comprises : direction l'onglet <strong>Étapes</strong> pour commencer, ou <strong>Matériaux</strong> pour ce qu'il faut réunir.</p>
+        </div>
+      </div>
     </section>
 
     <!-- ================= MATÉRIAUX ================= -->
@@ -444,6 +460,25 @@
             </table>
           </div>
           <p class="hint" style="margin-top:12px">Le SmallTV Pro (ESP32, plus de mémoire) fonctionne aussi mais coûte nettement plus cher — inutile pour ce projet, le SmallTV / SmallTV Ultra suffit largement.</p>
+        </div>
+      </div>
+    
+      <div id="materiauxProxmoxBody" style="display:none">
+        <div class="card">
+          <h2>Matériel à prévoir</h2>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <tbody>
+                <tr><td><strong>Raspberry Pi 5 8 Go</strong></td><td>Recommandé pour plusieurs VM (le 4 Go suffit pour une seule)</td><td class="qte">~165 à 210 €</td></tr>
+                <tr><td><strong>Ventilateur actif officiel</strong></td><td>Ou boîtier aluminium avec ventilateur PWM (~24 €)</td><td class="qte">~10 €</td></tr>
+                <tr><td><strong>Shield NVMe M.2 Key-M</strong></td><td>Optionnel — Geekworm X1001</td><td class="qte">~16 €</td></tr>
+                <tr><td><strong>SSD NVMe 256 à 500 Go</strong></td><td>Optionnel — plus rapide et durable qu'une microSD</td><td class="qte">~75 à 130 €</td></tr>
+                <tr><td><strong>Carte microSD</strong></td><td>Si pas de SSD : Raspberry Pi OS Lite 64 bits (Bookworm)</td><td class="qte">—</td></tr>
+                <tr><td><strong>Câble Ethernet</strong></td><td>Liaison filaire à la box, indispensable pour le pont des VM</td><td class="qte">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint" style="margin-top:12px">Prix relevés dans l'article (Amazon), à titre indicatif.</p>
         </div>
       </div>
     </section>
@@ -598,6 +633,19 @@
         <p class="hint">Code source : github.com/adrienbrault/geekmagic-hacs</p>
       </div>
 
+      <div id="infosProxmoxBody" class="card" style="display:none">
+        <h2>À savoir</h2>
+        <p class="hint"><strong>D'où vient ce projet</strong></p>
+        <p class="hint">Guide extrait de l'article « Comment installer Proxmox sur Raspberry Pi 5 avec Pimox » d'Aurélien Brunet sur domo-blog.fr (8 mai 2024). Les commandes sont reprises telles quelles ; seules les adresses de l'exemple (10.0.0.38 pour le Pi, 10.0.0.1 pour la box) sont à adapter.</p>
+        <p class="hint">Article : www.domo-blog.fr/comment-installer-proxmox-sur-raspberry-pi-5-avec-pimox/</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Performances</strong></p>
+        <p class="hint">Proxmox occupe un peu plus de 1 Go de RAM une fois installé. Un Pi 5 4 Go fait tourner une VM ; au-delà, prendre le 8 Go. La charge processeur est forte au premier démarrage de Home Assistant, le temps de l'initialisation.</p>
+
+        <p class="hint" style="margin-top:12px"><strong>Limites à connaître</strong></p>
+        <p class="hint">Proxmox n'existe pas officiellement pour ARM : les paquets viennent d'un miroir tiers (apqa.cn) et le script de VM Home Assistant d'un dépôt GitHub communautaire (tteck/Proxmox). L'interface web utilise un certificat auto-signé, d'où l'alerte du navigateur. Le Wi-Fi est déconseillé pour le serveur. L'article ne couvre ni la sécurisation, ni la maintenance, ni les sauvegardes.</p>
+      </div>
+
       <div class="card">
         <h2>Mes projets</h2>
         <div id="projets"></div>
@@ -619,7 +667,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-    window.APP_VERSION = '1.16';
+    window.APP_VERSION = '1.17';
     window.UPDATE_REPO = 'laurentsar/je-construis';
     window.BACKUP_APP = 'je-construis';
     window.BACKUP_ENTITY = 'sensor.je_construis_sauvegarde';
@@ -631,6 +679,7 @@
   <script src="steps_flash.js"></script>
   <script src="steps_routeur.js"></script>
   <script src="steps_ecran.js"></script>
+  <script src="steps_proxmox.js"></script>
   <script src="app.js"></script>
   <script src="autobackup.js"></script>
   <script src="update-check.js"></script>

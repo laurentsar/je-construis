@@ -425,6 +425,12 @@
       cle = '__ecran__';
       finMsg = ' — tableau de bord en place, bravo !';
       enCoursMsg = ' — coche au fur et à mesure du montage.';
+    } else if (projetActif === 'proxmox') {
+      if (!global_ProxmoxSteps()) return;
+      etapes = window.ProxmoxSteps.construire();
+      cle = '__proxmox__';
+      finMsg = ' — Proxmox en service, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure de l\'installation.';
     } else if (projetActif === 'dalle') {
       // Pas d'étapes à cocher : c'est un calculateur, pas un chantier.
       // L'onglet lui-même est masqué (voir appliquerProjetActif).
@@ -474,6 +480,7 @@
         }).join('') + '</div>';
       }
       html += '<ul>' + e.details.map(function (d) { return '<li>' + esc(d) + '</li>'; }).join('') + '</ul>';
+      if (e.code) html += '<pre class="code-bloc">' + esc(e.code) + '</pre>';
       if (e.attention) html += '<div class="encart attention">⚠️ ' + esc(e.attention) + '</div>';
       if (e.astuce) html += '<div class="encart astuce">💡 ' + esc(e.astuce) + '</div>';
       body.innerHTML = html;
@@ -505,6 +512,10 @@
     return window.EcranSteps && typeof window.EcranSteps.construire === 'function';
   }
 
+  function global_ProxmoxSteps() {
+    return window.ProxmoxSteps && typeof window.ProxmoxSteps.construire === 'function';
+  }
+
   // Bascule les onglets partagés sur le contenu du projet actif : Projet/
   // Matériaux/Infos gardent leur rôle avec un contenu adapté, tandis que
   // Débit et Plans (n'ont de sens que pour le carport) et Étapes (n'a de
@@ -516,6 +527,7 @@
     var f = projetActif === 'flash';
     var r = projetActif === 'routeur';
     var e = projetActif === 'ecran';
+    var x = projetActif === 'proxmox';
     var d = projetActif === 'dalle';
 
     $('projetCarportBody').style.display = c ? '' : 'none';
@@ -523,6 +535,7 @@
     $('projetFlashBody').style.display = f ? '' : 'none';
     $('projetRouteurBody').style.display = r ? '' : 'none';
     $('projetEcranBody').style.display = e ? '' : 'none';
+    $('projetProxmoxBody').style.display = x ? '' : 'none';
     $('projetDalleBody').style.display = d ? '' : 'none';
 
     $('materiauxCarportBody').style.display = c ? '' : 'none';
@@ -530,6 +543,7 @@
     $('materiauxFlashBody').style.display = f ? '' : 'none';
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
     $('materiauxEcranBody').style.display = e ? '' : 'none';
+    $('materiauxProxmoxBody').style.display = x ? '' : 'none';
     $('materiauxDalleBody').style.display = d ? '' : 'none';
 
     $('tabDebit').style.display = c ? '' : 'none';
@@ -543,6 +557,7 @@
     $('infosFlashBody').style.display = f ? '' : 'none';
     $('infosRouteurBody').style.display = r ? '' : 'none';
     $('infosEcranBody').style.display = e ? '' : 'none';
+    $('infosProxmoxBody').style.display = x ? '' : 'none';
     $('infosDalleBody').style.display = d ? '' : 'none';
 
     if (d) { etatVersFormDalle(); recalculerDalle(); }
@@ -693,6 +708,18 @@
     });
     ecr.appendChild(ecrOpen);
     box.appendChild(ecr);
+
+    var pmx = el('div', 'projet');
+    pmx.innerHTML = '<div style="flex:1"><div class="p-nom">🍓 Proxmox sur Raspberry Pi 5</div>' +
+      '<div class="p-sub">Pimox → serveur de VM + Home Assistant</div></div>';
+    var pmxOpen = el('button', null, '📂');
+    pmxOpen.title = 'Ouvrir le guide d\'installation';
+    pmxOpen.addEventListener('click', function () {
+      choisirProjet('proxmox');
+      montrerOnglet('projet');
+    });
+    pmx.appendChild(pmxOpen);
+    box.appendChild(pmx);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -855,6 +882,11 @@
 
     $('homeEcran').addEventListener('click', function () {
       choisirProjet('ecran');
+      montrerOnglet('projet');
+    });
+
+    $('homeProxmox').addEventListener('click', function () {
+      choisirProjet('proxmox');
       montrerOnglet('projet');
     });
 
