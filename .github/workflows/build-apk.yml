@@ -91,6 +91,19 @@ jobs:
           path: je-construis-${{ steps.version.outputs.version }}.apk
           if-no-files-found: error
 
+      - name: Generate release notes from commit message
+        id: notes
+        run: |
+          # Les commits de fonctionnalités (squash merge) listent déjà leurs
+          # changements en puces "- ..." : on les reprend telles quelles comme
+          # notes de version, affichées en liste dans l'app (update-check.js).
+          # À défaut (commit sans puces), on retombe sur une ligne générique.
+          git log -1 --format=%B | grep -E '^[-*] ' | sed -E 's/^[-*] */- /' > release-notes.txt || true
+          if [ ! -s release-notes.txt ]; then
+            echo "- Mise à jour v${{ steps.version.outputs.version }}" > release-notes.txt
+          fi
+          cat release-notes.txt
+
       - name: Create / update GitHub Release
         if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
         env:
@@ -100,7 +113,8 @@ jobs:
           APK="je-construis-${{ steps.version.outputs.version }}.apk"
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             gh release upload "v${VERSION}" "$APK" --clobber
+            gh release edit "v${VERSION}" --notes-file release-notes.txt
           else
-            gh release create "v${VERSION}" "$APK" --title "Je Construis v${VERSION}" --notes "Build automatique v${VERSION}"
+            gh release create "v${VERSION}" "$APK" --title "Je Construis v${VERSION}" --notes-file release-notes.txt
           fi
           gh release edit "v${VERSION}" --draft=false

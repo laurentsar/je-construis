@@ -1,7 +1,8 @@
 /*
  * update-check.js — vérification de mise à jour applicative (générique).
  * Interroge la dernière Release GitHub, compare au numéro embarqué et affiche
- * une bannière de téléchargement si une version plus récente est publiée.
+ * une carte « Mise à jour disponible » avec le changelog si une version plus
+ * récente est publiée.
  *
  * Config (dans index.html, avant ce script) :
  *   window.UPDATE_REPO = 'laurentsar/<repo>';   // obligatoire
@@ -36,6 +37,18 @@
     return 0;
   }
 
+  // Ne garde que les lignes à puces ("- xxx" / "* xxx") des notes de
+  // version : le reste (titres, phrases libres) n'est pas du changelog
+  // exploitable pour un affichage en liste.
+  function extraireNotes(body) {
+    if (!body) return [];
+    return String(body).split('\n')
+      .map(function (l) { return l.trim(); })
+      .filter(function (l) { return /^[-*]\s+\S/.test(l); })
+      .map(function (l) { return l.replace(/^[-*]\s+/, ''); })
+      .slice(0, 6);
+  }
+
   var last = parseInt(ls(true, KEY_POLL), 10) || 0;
   if (Date.now() - last < POLL_INTERVAL) return;
 
@@ -54,33 +67,55 @@
       var apk = (rel.assets || []).filter(function (a) {
         return /\.apk$/i.test(a.name);
       })[0];
-      showBanner(latest, apk ? apk.browser_download_url : rel.html_url);
+      showCard(latest, apk ? apk.browser_download_url : rel.html_url, extraireNotes(rel.body));
     })
     .catch(function () { /* hors-ligne : silencieux */ });
 
-  function showBanner(version, url) {
-    if (document.getElementById('update-banner')) return;
+  function showCard(version, url, notes) {
+    if (document.getElementById('update-card')) return;
     var css = document.createElement('style');
     css.textContent =
-      '#update-banner{position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;' +
-      'display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;' +
-      'background:#1f2937;color:#f9fafb;box-shadow:0 6px 24px rgba(0,0,0,.35);' +
-      'font:500 14px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;' +
-      'max-width:520px;margin:0 auto}' +
-      '#update-banner .ub-txt{flex:1;min-width:0}' +
-      '#update-banner b{color:#fff}' +
-      '#update-banner a.ub-act,#update-banner button.ub-act{flex:none;background:#22c55e;' +
-      'color:#06210f;text-decoration:none;border:0;font-weight:700;font-size:14px;' +
-      'padding:8px 14px;border-radius:10px;cursor:pointer}' +
-      '#update-banner button.ub-x{flex:none;background:transparent;border:0;color:#9ca3af;' +
-      'font-size:18px;line-height:1;cursor:pointer;padding:4px}';
+      '#update-card{position:fixed;left:12px;right:12px;bottom:12px;z-index:99999;' +
+      'background:#131f2b;color:#e6edf6;border:1px solid #24384a;border-radius:16px;' +
+      'box-shadow:0 10px 32px rgba(0,0,0,.45);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;' +
+      'max-width:480px;margin:0 auto;padding:16px}' +
+      '#update-card .uc-head{display:flex;align-items:center;gap:10px}' +
+      '#update-card .uc-ico{flex:none;font-size:22px}' +
+      '#update-card .uc-title{font-weight:700;font-size:16px;color:#fff}' +
+      '#update-card .uc-sub{color:#93a5ba;font-size:13px;margin-top:2px}' +
+      '#update-card ul.uc-notes{margin:12px 0 2px;padding:0 0 0 18px;color:#c3cedb}' +
+      '#update-card ul.uc-notes li{margin-bottom:4px}' +
+      '#update-card .uc-row{display:flex;gap:10px;margin-top:14px}' +
+      '#update-card a.uc-install,#update-card button.uc-install{flex:1;background:#4ec98a;' +
+      'color:#06210f;text-decoration:none;text-align:center;border:0;font-weight:700;font-size:14px;' +
+      'padding:10px 14px;border-radius:10px;cursor:pointer}' +
+      '#update-card button.uc-later{flex:none;background:transparent;border:1px solid #24384a;' +
+      'color:#93a5ba;font-size:14px;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer}';
     document.head.appendChild(css);
 
-    var b = document.createElement('div');
-    b.id = 'update-banner';
-    var txt = document.createElement('span');
-    txt.className = 'ub-txt';
-    txt.innerHTML = '🔄 Nouvelle version <b>v' + version + '</b> disponible';
+    var card = document.createElement('div');
+    card.id = 'update-card';
+
+    var head = document.createElement('div');
+    head.className = 'uc-head';
+    head.innerHTML = '<span class="uc-ico">🏗️</span>' +
+      '<span><span class="uc-title">Mise à jour disponible</span>' +
+      '<div class="uc-sub">Version ' + version + ' prête · installée : ' + CURRENT + '</div></span>';
+    card.appendChild(head);
+
+    if (notes.length) {
+      var ul = document.createElement('ul');
+      ul.className = 'uc-notes';
+      notes.forEach(function (n) {
+        var li = document.createElement('li');
+        li.textContent = n;
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+    }
+
+    var row = document.createElement('div');
+    row.className = 'uc-row';
 
     // Si le plugin natif est présent (APK) : bouton qui télécharge + INSTALLE
     // directement. Sinon lien de téléchargement navigateur (PWA).
@@ -89,26 +124,28 @@
     var act;
     if (canInstall) {
       act = document.createElement('button');
-      act.className = 'ub-act';
-      act.textContent = '⬇ Installer';
+      act.className = 'uc-install';
+      act.textContent = '⬇ Installer v' + version;
       act.onclick = function () {
         act.disabled = true; act.textContent = '⏳ Installation…';
         window.installApkUpdate(url, act, function () {
-          act.disabled = false; act.textContent = '⬇ Installer';
+          act.disabled = false; act.textContent = '⬇ Installer v' + version;
         });
       };
     } else {
       act = document.createElement('a');
-      act.className = 'ub-act';
+      act.className = 'uc-install';
       act.href = url; act.target = '_blank'; act.rel = 'noopener';
-      act.textContent = 'Télécharger';
+      act.textContent = '⬇ Installer v' + version;
     }
 
-    var x = document.createElement('button');
-    x.className = 'ub-x';
-    x.setAttribute('aria-label', 'Ignorer'); x.textContent = '✕';
-    x.onclick = function () { ls(false, KEY_DISMISS, version); b.remove(); };
-    b.appendChild(txt); b.appendChild(act); b.appendChild(x);
-    (document.body || document.documentElement).appendChild(b);
+    var later = document.createElement('button');
+    later.className = 'uc-later';
+    later.textContent = 'Plus tard';
+    later.onclick = function () { ls(false, KEY_DISMISS, version); card.remove(); };
+
+    row.appendChild(act); row.appendChild(later);
+    card.appendChild(row);
+    (document.body || document.documentElement).appendChild(card);
   }
 })();
