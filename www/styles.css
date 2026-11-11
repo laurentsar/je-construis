@@ -54,6 +54,15 @@ body {
   display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px;
   background: #101a24; border-bottom: 1px solid var(--line);
   position: sticky; top: 62px; z-index: 19; scrollbar-width: none;
+  /* touch-action: pan-x dit explicitement au navigateur que ce bandeau gère
+     le balayage horizontal, pour qu'un geste légèrement diagonal ne soit pas
+     récupéré par le défilement vertical de la page avant d'atteindre les
+     onglets (cause fréquente de « scroll latéral qui ne répond pas » sur
+     WebView Android). overscroll-behavior-x évite en plus que la page
+     « rebondisse » une fois arrivé au dernier onglet. */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 .tabs::-webkit-scrollbar { display: none; }
 .tab {
