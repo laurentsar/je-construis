@@ -431,6 +431,12 @@
       cle = '__proxmox__';
       finMsg = ' — Proxmox en service, bravo !';
       enCoursMsg = ' — coche au fur et à mesure de l\'installation.';
+    } else if (projetActif === 'veilleuse') {
+      if (!global_VeilleuseSteps()) return;
+      etapes = window.VeilleuseSteps.construire();
+      cle = '__veilleuse__';
+      finMsg = ' — veilleuse en service, bravo !';
+      enCoursMsg = ' — coche au fur et à mesure du montage.';
     } else if (projetActif === 'dalle') {
       // Pas d'étapes à cocher : c'est un calculateur, pas un chantier.
       // L'onglet lui-même est masqué (voir appliquerProjetActif).
@@ -516,6 +522,10 @@
     return window.ProxmoxSteps && typeof window.ProxmoxSteps.construire === 'function';
   }
 
+  function global_VeilleuseSteps() {
+    return window.VeilleuseSteps && typeof window.VeilleuseSteps.construire === 'function';
+  }
+
   // Bascule les onglets partagés sur le contenu du projet actif : Projet/
   // Matériaux/Infos gardent leur rôle avec un contenu adapté, tandis que
   // Débit et Plans (n'ont de sens que pour le carport) et Étapes (n'a de
@@ -528,6 +538,7 @@
     var r = projetActif === 'routeur';
     var e = projetActif === 'ecran';
     var x = projetActif === 'proxmox';
+    var v = projetActif === 'veilleuse';
     var d = projetActif === 'dalle';
 
     $('projetCarportBody').style.display = c ? '' : 'none';
@@ -536,6 +547,7 @@
     $('projetRouteurBody').style.display = r ? '' : 'none';
     $('projetEcranBody').style.display = e ? '' : 'none';
     $('projetProxmoxBody').style.display = x ? '' : 'none';
+    $('projetVeilleuseBody').style.display = v ? '' : 'none';
     $('projetDalleBody').style.display = d ? '' : 'none';
 
     $('materiauxCarportBody').style.display = c ? '' : 'none';
@@ -544,6 +556,7 @@
     $('materiauxRouteurBody').style.display = r ? '' : 'none';
     $('materiauxEcranBody').style.display = e ? '' : 'none';
     $('materiauxProxmoxBody').style.display = x ? '' : 'none';
+    $('materiauxVeilleuseBody').style.display = v ? '' : 'none';
     $('materiauxDalleBody').style.display = d ? '' : 'none';
 
     $('tabDebit').style.display = c ? '' : 'none';
@@ -558,6 +571,7 @@
     $('infosRouteurBody').style.display = r ? '' : 'none';
     $('infosEcranBody').style.display = e ? '' : 'none';
     $('infosProxmoxBody').style.display = x ? '' : 'none';
+    $('infosVeilleuseBody').style.display = v ? '' : 'none';
     $('infosDalleBody').style.display = d ? '' : 'none';
 
     if (d) { etatVersFormDalle(); recalculerDalle(); }
@@ -720,6 +734,18 @@
     });
     pmx.appendChild(pmxOpen);
     box.appendChild(pmx);
+    // Idem pour la veilleuse anti-trébuchement, épinglée en dernier.
+    var veil = el('div', 'projet');
+    veil.innerHTML = '<div style="flex:1"><div class="p-nom">💡 Veilleuse ESPHome</div>' +
+      '<div class="p-sub">Carte à 5 € + capteur de présence · guide pas à pas</div></div>';
+    var veilOpen = el('button', null, '📂');
+    veilOpen.title = 'Ouvrir le guide de montage';
+    veilOpen.addEventListener('click', function () {
+      choisirProjet('veilleuse');
+      montrerOnglet('projet');
+    });
+    veil.appendChild(veilOpen);
+    box.appendChild(veil);
 
     if (!liste.length) {
       box.appendChild(el('p', 'hint',
@@ -887,6 +913,11 @@
 
     $('homeProxmox').addEventListener('click', function () {
       choisirProjet('proxmox');
+      montrerOnglet('projet');
+    });
+
+    $('homeVeilleuse').addEventListener('click', function () {
+      choisirProjet('veilleuse');
       montrerOnglet('projet');
     });
 
