@@ -93,15 +93,46 @@ jobs:
 
       - name: Generate release notes from commit message
         id: notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           # Les commits de fonctionnalités (squash merge) listent déjà leurs
-          # changements en puces "- ..." : on les reprend telles quelles comme
-          # notes de version, affichées en liste dans l'app (update-check.js).
-          # À défaut (commit sans puces), on retombe sur une ligne générique.
-          git log -1 --format=%B | grep -E '^[-*] ' | sed -E 's/^[-*] */- /' > release-notes.txt || true
-          if [ ! -s release-notes.txt ]; then
-            echo "- Mise à jour v${{ steps.version.outputs.version }}" > release-notes.txt
-          fi
+          # changements en puces "- ..." : on les reprend comme notes de
+          # version, affichées en liste dans l'app (update-check.js). Chaque
+          # puce peut être enroulée sur plusieurs lignes dans le commit : on
+          # les rejoint avant de les réécrire une puce par ligne. À défaut
+          # (commit sans puces), on retombe sur une ligne générique.
+          git log -1 --format=%B > commit-msg.txt
+          python3 - "$VERSION" <<'PYEOF' > release-notes.txt
+          import re, sys
+          version = sys.argv[1]
+          with open('commit-msg.txt', encoding='utf-8') as f:
+              lines = f.read().split('\n')
+          bullets = []
+          current = None
+          collecting = False
+          stop_re = re.compile(r'^(Co-Authored-By|Claude-Session|Version\s)')
+          for raw in lines:
+              line = raw.strip()
+              m = re.match(r'^[-*]\s+(.*)', line)
+              if m:
+                  if current is not None:
+                      bullets.append(current)
+                  current = m.group(1)
+                  collecting = True
+                  continue
+              if collecting:
+                  if line == '' or stop_re.match(line):
+                      break
+                  current += ' ' + line
+          if current is not None:
+              bullets.append(current)
+          if bullets:
+              for b in bullets:
+                  print('- ' + b)
+          else:
+              print('- Mise à jour v' + version)
+          PYEOF
           cat release-notes.txt
 
       - name: Create / update GitHub Release
